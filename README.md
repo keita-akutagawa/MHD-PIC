@@ -1,6 +1,6 @@
 # MHD-PIC(未完成)
 
-理想MHDシミュレーションコードにPICコードを埋め込もうとしています。
+Ideal MHD + Particle in Cell
 
 - T. Sugiyama & K. Kusano, J. Comput. Phys., 227, 1340, 2007 
 - S. Usami et al., Phys. Plasmas., 20, 061208, 2013 
