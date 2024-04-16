@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import stats 
-from pic1d import *
 
 
 def interlocking_function(x_interface_coordinate):
@@ -197,7 +196,7 @@ def reset_particles(
                               + (index_interface_pic_start + i) * dx
         #new_particles_x[0, :] = (np.linspace(-0.5, 0.5, round(zeroth_moment_pic[i]))) * dx \
         #                      + (index_interface_pic_start + i) * dx
-
+    
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
     
@@ -410,3 +409,151 @@ def send_PIC_to_MHDinterface(
     U[7, index_interface_mhd_start + 1:index_interface_mhd_end] = e_mhd
 
     return U
+
+
+# PIC用
+
+def open_condition_x_left(v_pic, x_pic, x_min):
+
+    delete_index = np.where(x_pic[0, :] < x_min) 
+    x_pic = np.delete(x_pic, delete_index, axis=1)
+    v_pic = np.delete(v_pic, delete_index, axis=1)
+
+    return v_pic, x_pic
+
+
+def get_zeroth_moment(x, n_x, dx, zeroth_moment):
+    x_index = np.floor(x[0, :] / dx).astype(int)
+
+    cx1 = (x[0, :] - x_index*dx)/dx  
+    cx2 = ((x_index+1)*dx - x[0, :])/dx 
+    index_one_array = x_index
+
+    zeroth_moment[:] += np.bincount(index_one_array, 
+                                 weights=cx2, 
+                                 minlength=n_x
+                                )
+    zeroth_moment[:] += np.roll(np.bincount(index_one_array, 
+                                         weights=cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    
+    zeroth_moment[0] = zeroth_moment[1]
+    zeroth_moment[-1] = zeroth_moment[-2]
+    
+    return zeroth_moment
+
+
+def reload_get_zeroth_moment(x, n_x, dx, zeroth_moment):
+    x_index = np.round(x[0, :] / dx - 1e-10).astype(int)
+    x_index[x_index == n_x] = 0
+
+    index_one_array = x_index
+
+    zeroth_moment += np.bincount(index_one_array)
+    
+    return zeroth_moment
+
+
+def get_first_moment(c, v, x, n_x, dx, first_moment):
+    x_index = np.floor(x[0, :] / dx).astype(int)
+
+    cx1 = (x[0, :] - x_index*dx)/dx  
+    cx2 = ((x_index+1)*dx - x[0, :])/dx 
+    index_one_array = x_index
+
+    first_moment[0, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * cx2, 
+                                 minlength=n_x
+                                )
+    first_moment[0, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[0, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    first_moment[1, :] += np.bincount(index_one_array, 
+                                 weights=v[1, :] * cx2, 
+                                 minlength=n_x
+                                )
+    first_moment[1, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[1, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    first_moment[2, :] += np.bincount(index_one_array, 
+                                 weights=v[2, :] * cx2, 
+                                 minlength=n_x
+                                )
+    first_moment[2, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[2, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    
+    first_moment[:, 0] = first_moment[:, 1]
+    first_moment[:, -1] = first_moment[:, -2]
+
+    return first_moment
+
+
+def get_second_moment(c, v, x, n_x, dx, second_moment):
+    x_index = np.floor(x[0, :] / dx).astype(int)
+
+    cx1 = (x[0, :] - x_index*dx)/dx  
+    cx2 = ((x_index+1)*dx - x[0, :])/dx 
+    index_one_array = x_index
+
+    second_moment[0, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * v[0, :] * cx2, 
+                                 minlength=n_x
+                                )
+    second_moment[0, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[0, :] * v[0, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    second_moment[1, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * v[1, :] * cx2, 
+                                 minlength=n_x
+                                )
+    second_moment[1, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[0, :] * v[1, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    second_moment[2, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * v[2, :] * cx2, 
+                                 minlength=n_x
+                                )
+    second_moment[2, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[0, :] * v[2, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    second_moment[3, :] = second_moment[1, :]
+    second_moment[4, :] += np.bincount(index_one_array, 
+                                 weights=v[1, :] * v[1, :] * cx2, 
+                                 minlength=n_x
+                                )
+    second_moment[4, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[1, :] * v[1, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    second_moment[5, :] += np.bincount(index_one_array, 
+                                 weights=v[1, :] * v[2, :] * cx2, 
+                                 minlength=n_x
+                                )
+    second_moment[5, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[1, :] * v[2, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    second_moment[6, :] = second_moment[2, :]
+    second_moment[7, :] = second_moment[5, :]
+    second_moment[8, :] += np.bincount(index_one_array, 
+                                 weights=v[2, :] * v[2, :] * cx2, 
+                                 minlength=n_x
+                                )
+    second_moment[8, :] += np.roll(np.bincount(index_one_array, 
+                                         weights=v[2, :] * v[2, :] * cx1, 
+                                         minlength=n_x
+                                        ), 1, axis=0)
+    
+    second_moment[:, 0] = second_moment[:, 1]
+    second_moment[:, -1] = second_moment[:, -2]
+
+    return second_moment
+
