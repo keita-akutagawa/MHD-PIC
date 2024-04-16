@@ -3,3 +3,4 @@ pictures*/
 test*/
 *.mp4
 log_*
+__pycache__/
