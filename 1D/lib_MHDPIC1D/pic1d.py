@@ -182,11 +182,11 @@ def open_condition_x_left(v_pic, x_pic, x_min):
 
 
 def boundary_B(U, index_interface_mhd_start, index_interface_pic_start, B_pic):
-    B_pic[0, index_interface_pic_start] = U[4, index_interface_mhd_start] 
-    B_pic[1, index_interface_pic_start] = 0.5 * (U[5, index_interface_mhd_start] + U[5, index_interface_mhd_start + 1])
-    B_pic[2, index_interface_pic_start] = 0.5 * (U[6, index_interface_mhd_start] + U[6, index_interface_mhd_start + 1])
-    B_pic[0, -1] = B_pic[0, -2]
-    B_pic[[1, 2], -1] = B_pic[[1, 2], -2]
+    #B_pic[0, index_interface_pic_start] = U[4, index_interface_mhd_start] 
+    #B_pic[1, index_interface_pic_start] = 0.5 * (U[5, index_interface_mhd_start] + U[5, index_interface_mhd_start + 1])
+    #B_pic[2, index_interface_pic_start] = 0.5 * (U[6, index_interface_mhd_start] + U[6, index_interface_mhd_start + 1])
+    B_pic[:, 0] = B_pic[:, 1]
+    B_pic[:, -1] = B_pic[:, -2]
 
     return B_pic
 
@@ -212,10 +212,12 @@ def boundary_E(U, index_interface_mhd_start, index_interface_pic_start, E_pic):
     Bz = U[6, index_interface_mhd_start + 1]
     Ex2 = -(v * Bz - w * By)
 
-    E_pic[0, index_interface_pic_start] = 0.5 * (Ex1 + Ex2)
-    E_pic[1, index_interface_pic_start] = Ey
-    E_pic[2, index_interface_pic_start] = Ez
+    #E_pic[0, index_interface_pic_start] = 0.5 * (Ex1 + Ex2)
+    #E_pic[1, index_interface_pic_start] = Ey
+    #E_pic[2, index_interface_pic_start] = Ez
 
+    E_pic[0, 0] = 0.0
+    E_pic[[1, 2], 0] = E_pic[[1, 2], 1]
     E_pic[0, -1] = 0.0
     E_pic[[1, 2], -1] = E_pic[[1, 2], -2]
 
