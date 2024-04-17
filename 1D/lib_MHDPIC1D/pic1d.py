@@ -181,6 +181,15 @@ def open_condition_x_left(v_pic, x_pic, x_min):
     return v_pic, x_pic
 
 
+def open_condition_x_right(v_pic, x_pic, x_max):
+
+    delete_index = np.where(x_pic[0, :] > x_max) 
+    x_pic = np.delete(x_pic, delete_index, axis=1)
+    v_pic = np.delete(v_pic, delete_index, axis=1)
+
+    return v_pic, x_pic
+
+
 def boundary_B(U, index_interface_mhd_start, index_interface_pic_start, B_pic):
     #B_pic[0, index_interface_pic_start] = U[4, index_interface_mhd_start] 
     #B_pic[1, index_interface_pic_start] = 0.5 * (U[5, index_interface_mhd_start] + U[5, index_interface_mhd_start + 1])

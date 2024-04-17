@@ -171,11 +171,11 @@ def reset_particles(
         dx, v_pic, x_pic
     ):
     
-    delete_index = np.where(x_pic[0, :] <= index_interface_pic_end * dx - 1.5 * dx)[0]
+    delete_index = np.where(x_pic[0, :] <= index_interface_pic_end * dx - 0.5 * dx)[0]
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
-    for i in range(len(zeroth_moment_pic) - 1):
+    for i in range(len(zeroth_moment_pic)):
         new_particles_v = np.zeros([3, round(zeroth_moment_pic[i])])
         new_particles_x = np.zeros([3, round(zeroth_moment_pic[i])])
         random_number = np.random.randint(1, 10000)
@@ -196,7 +196,7 @@ def reset_particles(
                               + (index_interface_pic_start + i) * dx
         #new_particles_x[0, :] = (np.linspace(-0.5, 0.5, round(zeroth_moment_pic[i]))) * dx \
         #                      + (index_interface_pic_start + i) * dx
-    
+
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
     
@@ -416,6 +416,15 @@ def send_PIC_to_MHDinterface(
 def open_condition_x_left(v_pic, x_pic, x_min):
 
     delete_index = np.where(x_pic[0, :] < x_min) 
+    x_pic = np.delete(x_pic, delete_index, axis=1)
+    v_pic = np.delete(v_pic, delete_index, axis=1)
+
+    return v_pic, x_pic
+
+
+def open_condition_x_right(v_pic, x_pic, x_min, x_max):
+
+    delete_index = np.where((x_pic[0, :] > x_min) & (x_pic[0, :] < x_max)) 
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
