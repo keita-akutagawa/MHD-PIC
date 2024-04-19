@@ -56,15 +56,15 @@ def send_MHD_to_PICinterface_B(
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
                                             1)
     
-    B_pic[0, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
+    B_pic[0, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
         x_interface_coordinate, Bx_mhd, 
         B_pic[0, index_interface_pic_start:index_interface_pic_end]
     )
-    B_pic[1, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
+    B_pic[1, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
         x_interface_coordinate_half, By_mhd, 
         B_pic[1, index_interface_pic_start:index_interface_pic_end - 1]
     )
-    B_pic[2, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
+    B_pic[2, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
         x_interface_coordinate_half, Bz_mhd, 
         B_pic[2, index_interface_pic_start:index_interface_pic_end - 1]
     )
@@ -101,15 +101,15 @@ def send_MHD_to_PICinterface_E(
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
                                             1)
     
-    E_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
+    E_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
         x_interface_coordinate_half, Ex_mhd, 
         E_pic[0, index_interface_pic_start:index_interface_pic_end - 1]
     )
-    E_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
+    E_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
         x_interface_coordinate, Ey_mhd, 
         E_pic[1, index_interface_pic_start:index_interface_pic_end]
     )
-    E_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
+    E_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
         x_interface_coordinate, Ez_mhd, 
         E_pic[2, index_interface_pic_start:index_interface_pic_end]
     )
@@ -149,15 +149,15 @@ def send_MHD_to_PICinterface_current(
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
                                             1)
     
-    current_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
+    current_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
         x_interface_coordinate_half, current_x_mhd, 
         current_pic[0, index_interface_pic_start:index_interface_pic_end - 1]
     )
-    current_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
+    current_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
         x_interface_coordinate, current_y_mhd, 
         current_pic[1, index_interface_pic_start:index_interface_pic_end]
     )
-    current_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
+    current_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
         x_interface_coordinate, current_z_mhd, 
         current_pic[2, index_interface_pic_start:index_interface_pic_end]
     )
@@ -392,9 +392,9 @@ def send_PIC_to_MHDinterface(
     u_mhd = get_interface_quantity_temperature(x_interface_coordinate, u_mhd, bulk_speed_pic[0, :])
     v_mhd = get_interface_quantity_temperature(x_interface_coordinate, v_mhd, bulk_speed_pic[1, :])
     w_mhd = get_interface_quantity_temperature(x_interface_coordinate, w_mhd, bulk_speed_pic[2, :])
-    Bx_mhd = get_interface_quantity(x_interface_coordinate, Bx_mhd, Bx_pic)
-    By_mhd = get_interface_quantity(x_interface_coordinate, By_mhd, By_pic)
-    Bz_mhd = get_interface_quantity(x_interface_coordinate, Bz_mhd, Bz_pic)
+    Bx_mhd = get_interface_quantity_temperature(x_interface_coordinate, Bx_mhd, Bx_pic)
+    By_mhd = get_interface_quantity_temperature(x_interface_coordinate, By_mhd, By_pic)
+    Bz_mhd = get_interface_quantity_temperature(x_interface_coordinate, Bz_mhd, Bz_pic)
     p_mhd = get_interface_quantity_temperature(x_interface_coordinate, p_mhd, p_pic)
 
     U[0, index_interface_mhd_start + 1:index_interface_mhd_end] = rho_mhd
