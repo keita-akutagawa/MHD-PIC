@@ -56,15 +56,15 @@ def send_MHD_to_PICinterface_B(
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
                                             1)
     
-    B_pic[0, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
+    B_pic[0, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
         x_interface_coordinate, Bx_mhd, 
         B_pic[0, index_interface_pic_start:index_interface_pic_end]
     )
-    B_pic[1, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
+    B_pic[1, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
         x_interface_coordinate_half, By_mhd, 
         B_pic[1, index_interface_pic_start:index_interface_pic_end - 1]
     )
-    B_pic[2, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
+    B_pic[2, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
         x_interface_coordinate_half, Bz_mhd, 
         B_pic[2, index_interface_pic_start:index_interface_pic_end - 1]
     )
@@ -101,15 +101,15 @@ def send_MHD_to_PICinterface_E(
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
                                             1)
     
-    E_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
+    E_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
         x_interface_coordinate_half, Ex_mhd, 
         E_pic[0, index_interface_pic_start:index_interface_pic_end - 1]
     )
-    E_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
+    E_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
         x_interface_coordinate, Ey_mhd, 
         E_pic[1, index_interface_pic_start:index_interface_pic_end]
     )
-    E_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
+    E_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
         x_interface_coordinate, Ez_mhd, 
         E_pic[2, index_interface_pic_start:index_interface_pic_end]
     )
@@ -149,15 +149,15 @@ def send_MHD_to_PICinterface_current(
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
                                             1)
     
-    current_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_temperature(
+    current_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity(
         x_interface_coordinate_half, current_x_mhd, 
         current_pic[0, index_interface_pic_start:index_interface_pic_end - 1]
     )
-    current_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
+    current_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
         x_interface_coordinate, current_y_mhd, 
         current_pic[1, index_interface_pic_start:index_interface_pic_end]
     )
-    current_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_temperature(
+    current_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity(
         x_interface_coordinate, current_z_mhd, 
         current_pic[2, index_interface_pic_start:index_interface_pic_end]
     )
@@ -171,26 +171,26 @@ def reset_particles(
         dx, v_pic, x_pic
     ):
     
-    delete_index = np.where(x_pic[0, :] <= index_interface_pic_end * dx - 0.5 * dx)[0]
+    delete_index = np.where(x_pic[0, :] < index_interface_pic_end * dx - 0.5 * dx)[0]
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
     for i in range(len(zeroth_moment_pic)):
         new_particles_v = np.zeros([3, round(zeroth_moment_pic[i])])
         new_particles_x = np.zeros([3, round(zeroth_moment_pic[i])])
-        random_number = np.random.randint(1, 10000)
+        random_number = np.random.randint(1, 100000000)
         new_particles_v[0, :] = np.asarray(
             stats.norm.rvs(bulk_speed_pic[0, i], np.sqrt(v_th_squared_pic[i]), size=round(zeroth_moment_pic[i]), random_state=random_number)
         )
-        random_number = np.random.randint(1, 10000)
+        random_number = np.random.randint(1, 100000000)
         new_particles_v[1, :] = np.asarray(
             stats.norm.rvs(bulk_speed_pic[1, i], np.sqrt(v_th_squared_pic[i]), size=round(zeroth_moment_pic[i]), random_state=random_number)
         )
-        random_number = np.random.randint(1, 10000)
+        random_number = np.random.randint(1, 100000000)
         new_particles_v[2, :] = np.asarray(
             stats.norm.rvs(bulk_speed_pic[2, i], np.sqrt(v_th_squared_pic[i]), size=round(zeroth_moment_pic[i]), random_state=random_number)
         )
-        random_number = np.random.randint(1, 10000)
+        random_number = np.random.randint(1, 100000000)
         rs = np.random.RandomState(random_number)
         new_particles_x[0, :] = (rs.rand(round(zeroth_moment_pic[i])) - 0.5) * dx \
                               + (index_interface_pic_start + i) * dx
@@ -279,7 +279,7 @@ def send_MHD_to_PICinterface_particle(
     p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
     
     ni_mhd = rho_mhd / (m_electron + m_ion)
-    ne_mhd = ni_mhd# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
+    ne_mhd = ni_mhd - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
     vxi_mhd = u_mhd
     vyi_mhd = v_mhd
     vzi_mhd = w_mhd
@@ -287,34 +287,34 @@ def send_MHD_to_PICinterface_particle(
     vye_mhd = v_mhd - current_y_mhd / ne_mhd / np.abs(q_electron)
     vze_mhd = w_mhd - current_z_mhd / ne_mhd / np.abs(q_electron)
     #Ti=Teのつもり
-    v_thi_squared_mhd = 2.0 * p_mhd / (ni_mhd + ne_mhd) / m_ion      
-    v_the_squared_mhd = 2.0 * p_mhd / (ni_mhd + ne_mhd) / m_electron 
+    v_thi_squared_mhd = p_mhd / ni_mhd / m_ion      
+    v_the_squared_mhd = p_mhd / ne_mhd / m_electron 
 
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
-    reload_zeroth_moment_ion = get_interface_quantity_temperature(
+    reload_zeroth_moment_ion = get_interface_quantity(
         x_interface_coordinate, ni_mhd, reload_zeroth_moment_ion
     )
-    reload_zeroth_moment_electron = get_interface_quantity_temperature(
+    reload_zeroth_moment_electron = get_interface_quantity(
         x_interface_coordinate, ne_mhd, reload_zeroth_moment_electron
     )
-    bulk_speed_ion_pic[0, :] = get_interface_quantity_temperature(
+    bulk_speed_ion_pic[0, :] = get_interface_quantity(
         x_interface_coordinate, vxi_mhd, bulk_speed_ion_pic[0, :]
     )
-    bulk_speed_ion_pic[1, :] = get_interface_quantity_temperature(
+    bulk_speed_ion_pic[1, :] = get_interface_quantity(
         x_interface_coordinate, vyi_mhd, bulk_speed_ion_pic[1, :]
     )
-    bulk_speed_ion_pic[2, :] = get_interface_quantity_temperature(
+    bulk_speed_ion_pic[2, :] = get_interface_quantity(
         x_interface_coordinate, vzi_mhd, bulk_speed_ion_pic[2, :]
     )
-    bulk_speed_electron_pic[0, :] = get_interface_quantity_temperature(
+    bulk_speed_electron_pic[0, :] = get_interface_quantity(
         x_interface_coordinate, vxe_mhd, bulk_speed_electron_pic[0, :]
     )
-    bulk_speed_electron_pic[1, :] = get_interface_quantity_temperature(
+    bulk_speed_electron_pic[1, :] = get_interface_quantity(
         x_interface_coordinate, vye_mhd, bulk_speed_electron_pic[1, :]
     )
-    bulk_speed_electron_pic[2, :] = get_interface_quantity_temperature(
+    bulk_speed_electron_pic[2, :] = get_interface_quantity(
         x_interface_coordinate, vze_mhd, bulk_speed_electron_pic[2, :]
     )
     v_thi_squared_pic = get_interface_quantity_temperature(
@@ -388,13 +388,13 @@ def send_PIC_to_MHDinterface(
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start - 1, 1)
 
-    rho_mhd = get_interface_quantity_temperature(x_interface_coordinate, rho_mhd, rho_pic)
-    u_mhd = get_interface_quantity_temperature(x_interface_coordinate, u_mhd, bulk_speed_pic[0, :])
-    v_mhd = get_interface_quantity_temperature(x_interface_coordinate, v_mhd, bulk_speed_pic[1, :])
-    w_mhd = get_interface_quantity_temperature(x_interface_coordinate, w_mhd, bulk_speed_pic[2, :])
-    Bx_mhd = get_interface_quantity_temperature(x_interface_coordinate, Bx_mhd, Bx_pic)
-    By_mhd = get_interface_quantity_temperature(x_interface_coordinate, By_mhd, By_pic)
-    Bz_mhd = get_interface_quantity_temperature(x_interface_coordinate, Bz_mhd, Bz_pic)
+    rho_mhd = get_interface_quantity(x_interface_coordinate, rho_mhd, rho_pic)
+    u_mhd = get_interface_quantity(x_interface_coordinate, u_mhd, bulk_speed_pic[0, :])
+    v_mhd = get_interface_quantity(x_interface_coordinate, v_mhd, bulk_speed_pic[1, :])
+    w_mhd = get_interface_quantity(x_interface_coordinate, w_mhd, bulk_speed_pic[2, :])
+    Bx_mhd = get_interface_quantity(x_interface_coordinate, Bx_mhd, Bx_pic)
+    By_mhd = get_interface_quantity(x_interface_coordinate, By_mhd, By_pic)
+    Bz_mhd = get_interface_quantity(x_interface_coordinate, Bz_mhd, Bz_pic)
     p_mhd = get_interface_quantity_temperature(x_interface_coordinate, p_mhd, p_pic)
 
     U[0, index_interface_mhd_start + 1:index_interface_mhd_end] = rho_mhd
