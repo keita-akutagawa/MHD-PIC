@@ -11,7 +11,7 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    #F[-1] = 0.0
+    F[-1] = 0.0
     return F
 
 
@@ -24,11 +24,6 @@ def get_interface_quantity(x_interface_coordinate, q_mhd, q_pic):
 def get_interface_quantity_temperature(x_interface_coordinate, q_mhd, q_pic):
     F = interlocking_function_temperature(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
-    return q_interface
-
-
-def get_interface_quantity_test(x_interface_coordinate, q_mhd, q_pic):
-    q_interface = q_mhd 
     return q_interface
 
 
@@ -226,10 +221,10 @@ def send_MHD_to_PICinterface_particle(
     second_moment_ion = get_second_moment(c, v_pic_ion, x_pic_ion, nx_pic, dx, second_moment_ion)
     second_moment_electron = get_second_moment(c, v_pic_electron, x_pic_electron, nx_pic, dx, second_moment_electron)
     # 粒子のリロードに関して、粒子数の計算は位置の四捨五入で設定する。そうしないとずれる…！
-    reload_zeroth_moment_ion = np.zeros(nx_pic)
-    reload_zeroth_moment_electron = np.zeros(nx_pic)
-    reload_zeroth_moment_ion = reload_get_zeroth_moment(x_pic_ion, nx_pic, dx, reload_zeroth_moment_ion)
-    reload_zeroth_moment_electron = reload_get_zeroth_moment(x_pic_electron, nx_pic, dx, reload_zeroth_moment_electron)
+    #reload_zeroth_moment_ion = np.zeros(nx_pic)
+    #reload_zeroth_moment_electron = np.zeros(nx_pic)
+    #reload_zeroth_moment_ion = reload_get_zeroth_moment(x_pic_ion, nx_pic, dx, reload_zeroth_moment_ion)
+    #reload_zeroth_moment_electron = reload_get_zeroth_moment(x_pic_electron, nx_pic, dx, reload_zeroth_moment_electron)
 
     bulk_speed_ion_pic = first_moment_ion / (zeroth_moment_ion + 1e-10)
     bulk_speed_electron_pic = first_moment_electron / (zeroth_moment_electron + 1e-10)
@@ -266,8 +261,8 @@ def send_MHD_to_PICinterface_particle(
     bulk_speed_electron_pic = bulk_speed_electron_pic[:, index_interface_pic_start:index_interface_pic_end]
     v_thi_squared_pic = v_thi_squared_pic[index_interface_pic_start:index_interface_pic_end]
     v_the_squared_pic = v_the_squared_pic[index_interface_pic_start:index_interface_pic_end]
-    reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
-    reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
+    #reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
+    #reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
     u_mhd = u_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -279,13 +274,20 @@ def send_MHD_to_PICinterface_particle(
     p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
     
     ni_mhd = rho_mhd / (m_electron + m_ion)
-    ne_mhd = ni_mhd - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
+    ne_mhd = ni_mhd# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
     vxi_mhd = u_mhd
     vyi_mhd = v_mhd
     vzi_mhd = w_mhd
     vxe_mhd = u_mhd - current_x_mhd / ne_mhd / np.abs(q_electron)
     vye_mhd = v_mhd - current_y_mhd / ne_mhd / np.abs(q_electron)
     vze_mhd = w_mhd - current_z_mhd / ne_mhd / np.abs(q_electron)
+    q_ion = -1.0 * q_electron
+    #vxi_mhd = ((1.0 + m_electron / m_ion) * (q_electron / m_electron * u_mhd - current_x_mhd/rho_mhd)) / (q_electron/m_electron - q_ion/m_ion)
+    #vyi_mhd = ((1.0 + m_electron / m_ion) * (q_electron / m_electron * v_mhd - current_y_mhd/rho_mhd)) / (q_electron/m_electron - q_ion/m_ion)
+    #vzi_mhd = ((1.0 + m_electron / m_ion) * (q_electron / m_electron * w_mhd - current_z_mhd/rho_mhd)) / (q_electron/m_electron - q_ion/m_ion)
+    #vxe_mhd = ((1.0 + m_ion / m_electron) * (q_ion / m_ion * u_mhd - current_x_mhd/rho_mhd)) / (q_ion/m_ion - q_electron/m_electron)
+    #vye_mhd = ((1.0 + m_ion / m_electron) * (q_ion / m_ion * v_mhd - current_y_mhd/rho_mhd)) / (q_ion/m_ion - q_electron/m_electron)
+    #vze_mhd = ((1.0 + m_ion / m_electron) * (q_ion / m_ion * w_mhd - current_z_mhd/rho_mhd)) / (q_ion/m_ion - q_electron/m_electron)
     #Ti=Teのつもり
     v_thi_squared_mhd = p_mhd / ni_mhd / m_ion      
     v_the_squared_mhd = p_mhd / ne_mhd / m_electron 
@@ -293,11 +295,11 @@ def send_MHD_to_PICinterface_particle(
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
-    reload_zeroth_moment_ion = get_interface_quantity(
-        x_interface_coordinate, ni_mhd, reload_zeroth_moment_ion
+    zeroth_moment_ion = get_interface_quantity(
+        x_interface_coordinate, ni_mhd, zeroth_moment_ion
     )
-    reload_zeroth_moment_electron = get_interface_quantity(
-        x_interface_coordinate, ne_mhd, reload_zeroth_moment_electron
+    zeroth_moment_electron = get_interface_quantity(
+        x_interface_coordinate, ne_mhd, zeroth_moment_electron
     )
     bulk_speed_ion_pic[0, :] = get_interface_quantity(
         x_interface_coordinate, vxi_mhd, bulk_speed_ion_pic[0, :]
@@ -325,12 +327,12 @@ def send_MHD_to_PICinterface_particle(
     )
  
     v_pic_ion, x_pic_ion = reset_particles(
-        reload_zeroth_moment_ion, bulk_speed_ion_pic, v_thi_squared_pic,
+        zeroth_moment_ion, bulk_speed_ion_pic, v_thi_squared_pic,
         index_interface_pic_start, index_interface_pic_end,
         dx, v_pic_ion, x_pic_ion
     )
     v_pic_electron, x_pic_electron = reset_particles(
-        reload_zeroth_moment_electron, bulk_speed_electron_pic, v_the_squared_pic,
+        zeroth_moment_electron, bulk_speed_electron_pic, v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic_electron, x_pic_electron
     )
@@ -453,15 +455,15 @@ def get_zeroth_moment(x, n_x, dx, zeroth_moment):
     return zeroth_moment
 
 
-def reload_get_zeroth_moment(x, n_x, dx, zeroth_moment):
-    x_index = np.round(x[0, :] / dx - 1e-10).astype(int)
-    x_index[x_index == n_x] = 0
-
-    index_one_array = x_index
-
-    zeroth_moment += np.bincount(index_one_array)
-    
-    return zeroth_moment
+#def reload_get_zeroth_moment(x, n_x, dx, zeroth_moment):
+#    x_index = np.round(x[0, :] / dx - 1e-10).astype(int)
+#    x_index[x_index == n_x] = 0
+#
+#    index_one_array = x_index
+#
+#    zeroth_moment += np.bincount(index_one_array)
+#    
+#    return zeroth_moment
 
 
 def get_first_moment(c, v, x, n_x, dx, first_moment):
