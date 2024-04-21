@@ -190,43 +190,15 @@ def open_condition_x_right(v_pic, x_pic, x_max):
     return v_pic, x_pic
 
 
-def boundary_B(U, index_interface_mhd_start, index_interface_pic_start, B_pic):
-    #B_pic[0, index_interface_pic_start] = U[4, index_interface_mhd_start] 
-    #B_pic[1, index_interface_pic_start] = 0.5 * (U[5, index_interface_mhd_start] + U[5, index_interface_mhd_start + 1])
-    #B_pic[2, index_interface_pic_start] = 0.5 * (U[6, index_interface_mhd_start] + U[6, index_interface_mhd_start + 1])
+def boundary_B(B_pic):
     B_pic[:, 0] = B_pic[:, 1]
     B_pic[:, -1] = B_pic[:, -2]
 
     return B_pic
 
 
-def boundary_E(U, index_interface_mhd_start, index_interface_pic_start, E_pic):
-    rho = U[0, index_interface_mhd_start] 
-    u = U[1, index_interface_mhd_start] / rho
-    v = U[2, index_interface_mhd_start] / rho
-    w = U[3, index_interface_mhd_start] / rho
-    Bx = U[4, index_interface_mhd_start]
-    By = U[5, index_interface_mhd_start]
-    Bz = U[6, index_interface_mhd_start]
-    Ex1 = -(v * Bz - w * By)
-    Ey = -(w * Bx - u * Bz)
-    Ez = -(u * By - v * Bx)
-
-    rho = U[0, index_interface_mhd_start + 1] 
-    u = U[1, index_interface_mhd_start + 1] / rho
-    v = U[2, index_interface_mhd_start + 1] / rho
-    w = U[3, index_interface_mhd_start + 1] / rho
-    Bx = U[4, index_interface_mhd_start + 1]
-    By = U[5, index_interface_mhd_start + 1]
-    Bz = U[6, index_interface_mhd_start + 1]
-    Ex2 = -(v * Bz - w * By)
-
-    #E_pic[0, index_interface_pic_start] = 0.5 * (Ex1 + Ex2)
-    #E_pic[1, index_interface_pic_start] = Ey
-    #E_pic[2, index_interface_pic_start] = Ez
-
-    E_pic[0, 0] = 0.0
-    E_pic[[1, 2], 0] = E_pic[[1, 2], 1]
+def boundary_E(E_pic):
+    E_pic[:, 0] = E_pic[:, 1]
     E_pic[0, -1] = 0.0
     E_pic[[1, 2], -1] = E_pic[[1, 2], -2]
 

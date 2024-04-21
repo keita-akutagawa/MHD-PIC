@@ -5,6 +5,7 @@ from scipy import stats
 def interlocking_function(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = 0.5 * (1.0 + np.cos(np.pi * (x_interface_coordinate - 0.0) / (x_interface_coordinate[-1] - 0.0)))
+    #F = 0.5 * (1.0 + np.tanh((x_interface_coordinate[10] - x_interface_coordinate) / 5.0))
     return F
 
 
@@ -228,12 +229,15 @@ def send_MHD_to_PICinterface_particle(
 
     bulk_speed_ion_pic = first_moment_ion / (zeroth_moment_ion + 1e-10)
     bulk_speed_electron_pic = first_moment_electron / (zeroth_moment_electron + 1e-10)
+    bulk_speed_pic = (m_electron * bulk_speed_electron_pic + m_ion * bulk_speed_ion_pic) / (m_electron + m_ion)
     v_thi_squared_pic = ((second_moment_ion[0, :] + second_moment_ion[4, :] + second_moment_ion[8, :])
                         - zeroth_moment_ion * (bulk_speed_ion_pic[0, :]**2 + bulk_speed_ion_pic[1, :]**2 + bulk_speed_ion_pic[2, :]**2)) \
                         / 3.0 / (zeroth_moment_ion + 1e-10)
     v_the_squared_pic = ((second_moment_electron[0, :] + second_moment_electron[4, :] + second_moment_electron[8, :])
                         - zeroth_moment_electron * (bulk_speed_electron_pic[0, :]**2 + bulk_speed_electron_pic[1, :]**2 + bulk_speed_electron_pic[2, :]**2)) \
                         / 3.0 / (zeroth_moment_electron + 1e-10)
+    q_ion = -1.0 * q_electron
+    current_pic = first_moment_ion * q_ion + first_moment_electron * q_electron
     
     rho_mhd = U[0, :]
     u_mhd = U[1, :] / rho_mhd
@@ -259,10 +263,12 @@ def send_MHD_to_PICinterface_particle(
     zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
     bulk_speed_ion_pic = bulk_speed_ion_pic[:, index_interface_pic_start:index_interface_pic_end]
     bulk_speed_electron_pic = bulk_speed_electron_pic[:, index_interface_pic_start:index_interface_pic_end]
+    bulk_speed_pic = bulk_speed_pic[:, index_interface_pic_start:index_interface_pic_end]
     v_thi_squared_pic = v_thi_squared_pic[index_interface_pic_start:index_interface_pic_end]
     v_the_squared_pic = v_the_squared_pic[index_interface_pic_start:index_interface_pic_end]
     reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
     reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
+    current_pic = current_pic[:, index_interface_pic_start:index_interface_pic_end]
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
     u_mhd = u_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -275,19 +281,6 @@ def send_MHD_to_PICinterface_particle(
     
     ni_mhd = rho_mhd / (m_electron + m_ion)
     ne_mhd = ni_mhd# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
-    #vxi_mhd = u_mhd
-    #vyi_mhd = v_mhd
-    #vzi_mhd = w_mhd
-    #vxe_mhd = u_mhd - current_x_mhd / ne_mhd / np.abs(q_electron)
-    #vye_mhd = v_mhd - current_y_mhd / ne_mhd / np.abs(q_electron)
-    #vze_mhd = w_mhd - current_z_mhd / ne_mhd / np.abs(q_electron)
-    q_ion = -1.0 * q_electron
-    vxi_mhd = ((1.0 + m_electron / m_ion) * (q_electron / m_electron * u_mhd - current_x_mhd/rho_mhd)) / (q_electron/m_electron - q_ion/m_ion)
-    vyi_mhd = ((1.0 + m_electron / m_ion) * (q_electron / m_electron * v_mhd - current_y_mhd/rho_mhd)) / (q_electron/m_electron - q_ion/m_ion)
-    vzi_mhd = ((1.0 + m_electron / m_ion) * (q_electron / m_electron * w_mhd - current_z_mhd/rho_mhd)) / (q_electron/m_electron - q_ion/m_ion)
-    vxe_mhd = ((1.0 + m_ion / m_electron) * (q_ion / m_ion * u_mhd - current_x_mhd/rho_mhd)) / (q_ion/m_ion - q_electron/m_electron)
-    vye_mhd = ((1.0 + m_ion / m_electron) * (q_ion / m_ion * v_mhd - current_y_mhd/rho_mhd)) / (q_ion/m_ion - q_electron/m_electron)
-    vze_mhd = ((1.0 + m_ion / m_electron) * (q_ion / m_ion * w_mhd - current_z_mhd/rho_mhd)) / (q_ion/m_ion - q_electron/m_electron)
     #Ti=Teのつもり
     v_thi_squared_mhd = p_mhd / ni_mhd / m_ion      
     v_the_squared_mhd = p_mhd / ne_mhd / m_electron 
@@ -295,29 +288,29 @@ def send_MHD_to_PICinterface_particle(
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
-    zeroth_moment_ion = get_interface_quantity(
-        x_interface_coordinate, ni_mhd, zeroth_moment_ion
+    reload_zeroth_moment_ion = get_interface_quantity(
+        x_interface_coordinate, ni_mhd, reload_zeroth_moment_ion
     )
-    zeroth_moment_electron = get_interface_quantity(
-        x_interface_coordinate, ne_mhd, zeroth_moment_electron
+    reload_zeroth_moment_electron = get_interface_quantity(
+        x_interface_coordinate, ne_mhd, reload_zeroth_moment_electron
     )
-    bulk_speed_ion_pic[0, :] = get_interface_quantity(
-        x_interface_coordinate, vxi_mhd, bulk_speed_ion_pic[0, :]
+    bulk_speed_pic[0, :] = get_interface_quantity(
+        x_interface_coordinate, u_mhd, bulk_speed_pic[0, :]
     )
-    bulk_speed_ion_pic[1, :] = get_interface_quantity(
-        x_interface_coordinate, vyi_mhd, bulk_speed_ion_pic[1, :]
+    bulk_speed_pic[1, :] = get_interface_quantity(
+        x_interface_coordinate, u_mhd, bulk_speed_pic[1, :]
     )
-    bulk_speed_ion_pic[2, :] = get_interface_quantity(
-        x_interface_coordinate, vzi_mhd, bulk_speed_ion_pic[2, :]
+    bulk_speed_pic[2, :] = get_interface_quantity(
+        x_interface_coordinate, u_mhd, bulk_speed_pic[2, :]
     )
-    bulk_speed_electron_pic[0, :] = get_interface_quantity(
-        x_interface_coordinate, vxe_mhd, bulk_speed_electron_pic[0, :]
+    current_pic[0, :] = get_interface_quantity(
+        x_interface_coordinate, current_x_mhd, current_pic[0, :]
     )
-    bulk_speed_electron_pic[1, :] = get_interface_quantity(
-        x_interface_coordinate, vye_mhd, bulk_speed_electron_pic[1, :]
+    current_pic[1, :] = get_interface_quantity(
+        x_interface_coordinate, current_y_mhd, current_pic[1, :]
     )
-    bulk_speed_electron_pic[2, :] = get_interface_quantity(
-        x_interface_coordinate, vze_mhd, bulk_speed_electron_pic[2, :]
+    current_pic[2, :] = get_interface_quantity(
+        x_interface_coordinate, current_z_mhd, current_pic[2, :]
     )
     v_thi_squared_pic = get_interface_quantity_temperature(
         x_interface_coordinate, v_thi_squared_mhd, v_thi_squared_pic
@@ -327,12 +320,12 @@ def send_MHD_to_PICinterface_particle(
     )
  
     v_pic_ion, x_pic_ion = reset_particles(
-        zeroth_moment_ion, bulk_speed_ion_pic, v_thi_squared_pic,
+        reload_zeroth_moment_ion, bulk_speed_pic, v_thi_squared_pic,
         index_interface_pic_start, index_interface_pic_end,
         dx, v_pic_ion, x_pic_ion
     )
     v_pic_electron, x_pic_electron = reset_particles(
-        zeroth_moment_electron, bulk_speed_electron_pic, v_the_squared_pic,
+        reload_zeroth_moment_electron, bulk_speed_pic - current_pic / reload_zeroth_moment_electron, v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic_electron, x_pic_electron
     )
