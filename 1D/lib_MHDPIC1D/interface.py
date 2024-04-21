@@ -325,7 +325,7 @@ def send_MHD_to_PICinterface_particle(
         dx, v_pic_ion, x_pic_ion
     )
     v_pic_electron, x_pic_electron = reset_particles(
-        reload_zeroth_moment_electron, bulk_speed_pic - current_pic / reload_zeroth_moment_electron, v_the_squared_pic,
+        reload_zeroth_moment_electron, bulk_speed_pic - current_pic / reload_zeroth_moment_electron / np.abs(q_electron), v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic_electron, x_pic_electron
     )
@@ -381,7 +381,7 @@ def send_PIC_to_MHDinterface(
           * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
               - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
 
-    x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start - 1, 1)
+    x_interface_coordinate = np.arange(1, index_interface_pic_end - index_interface_pic_start, 1)
 
     rho_mhd = get_interface_quantity(x_interface_coordinate, rho_mhd, rho_pic)
     u_mhd = get_interface_quantity(x_interface_coordinate, u_mhd, bulk_speed_pic[0, :])
