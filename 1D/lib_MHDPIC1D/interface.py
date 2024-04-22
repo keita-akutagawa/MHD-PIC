@@ -11,7 +11,7 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    F[-1] = 0.0
+    #F[-1] = 0.0
     return F
 
 
@@ -304,7 +304,7 @@ def send_MHD_to_PICinterface_particle(
     p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
     
     ni_mhd = rho_mhd / (m_electron + m_ion)
-    ne_mhd = ni_mhd - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
+    ne_mhd = ni_mhd# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
     #Ti=Teのつもり
     v_thi_squared_mhd = p_mhd / ni_mhd / m_ion      
     v_the_squared_mhd = p_mhd / ne_mhd / m_electron 
@@ -312,11 +312,11 @@ def send_MHD_to_PICinterface_particle(
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
-    zeroth_moment_ion = get_interface_quantity_MHDtoPIC(
-        x_interface_coordinate, ni_mhd, zeroth_moment_ion
+    reload_zeroth_moment_ion = get_interface_quantity_MHDtoPIC(
+        x_interface_coordinate, ni_mhd, reload_zeroth_moment_ion
     )
-    zeroth_moment_electron = get_interface_quantity_MHDtoPIC(
-        x_interface_coordinate, ne_mhd, zeroth_moment_electron
+    reload_zeroth_moment_electron = get_interface_quantity_MHDtoPIC(
+        x_interface_coordinate, ne_mhd, reload_zeroth_moment_electron
     )
     bulk_speed_pic[0, :] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, u_mhd, bulk_speed_pic[0, :]
@@ -345,16 +345,16 @@ def send_MHD_to_PICinterface_particle(
  
     bulk_speed_ion = bulk_speed_pic
     v_pic_ion, x_pic_ion = reset_particles(
-        zeroth_moment_ion, bulk_speed_ion, v_thi_squared_pic,
+        reload_zeroth_moment_ion, bulk_speed_ion, v_thi_squared_pic,
         index_interface_pic_start, index_interface_pic_end,
         dx, v_pic_ion, x_pic_ion
     )
     bulk_speed_electron = np.zeros(bulk_speed_electron_pic.shape)
     bulk_speed_electron[0, :] = bulk_speed_pic[0, :] - current_pic[0, :] / zeroth_moment_electron / np.abs(q_electron)
-    bulk_speed_electron[0, :] = bulk_speed_pic[1, :] - current_pic[1, :] / zeroth_moment_electron / np.abs(q_electron)
-    bulk_speed_electron[0, :] = bulk_speed_pic[2, :] - current_pic[2, :] / zeroth_moment_electron / np.abs(q_electron)
+    bulk_speed_electron[1, :] = bulk_speed_pic[1, :] - current_pic[1, :] / zeroth_moment_electron / np.abs(q_electron)
+    bulk_speed_electron[2, :] = bulk_speed_pic[2, :] - current_pic[2, :] / zeroth_moment_electron / np.abs(q_electron)
     v_pic_electron, x_pic_electron = reset_particles(
-        zeroth_moment_electron, bulk_speed_electron, v_the_squared_pic,
+        reload_zeroth_moment_electron, bulk_speed_electron, v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic_electron, x_pic_electron
     )

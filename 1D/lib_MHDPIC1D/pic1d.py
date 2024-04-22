@@ -199,8 +199,7 @@ def boundary_B(B_pic):
 
 def boundary_E(E_pic):
     E_pic[:, 0] = E_pic[:, 1]
-    E_pic[0, -1] = 0.0
-    E_pic[[1, 2], -1] = E_pic[[1, 2], -2]
+    E_pic[:, -1] = E_pic[:, -2]
 
     return E_pic
 
