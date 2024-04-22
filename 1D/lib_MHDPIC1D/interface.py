@@ -11,7 +11,7 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    F[-1] = 0.0
+    #F[-1] = 0.0
     return F
 
 
@@ -350,9 +350,9 @@ def send_MHD_to_PICinterface_particle(
         dx, v_pic_ion, x_pic_ion
     )
     bulk_speed_electron = np.zeros(bulk_speed_electron_pic.shape)
-    bulk_speed_electron[0, :] = bulk_speed_pic[0, :] - current_pic[0, :] / zeroth_moment_electron / np.abs(q_electron)
-    bulk_speed_electron[1, :] = bulk_speed_pic[1, :] - current_pic[1, :] / zeroth_moment_electron / np.abs(q_electron)
-    bulk_speed_electron[2, :] = bulk_speed_pic[2, :] - current_pic[2, :] / zeroth_moment_electron / np.abs(q_electron)
+    bulk_speed_electron[0, :] = bulk_speed_pic[0, :]# - current_pic[0, :] / zeroth_moment_electron / np.abs(q_electron)
+    bulk_speed_electron[1, :] = bulk_speed_pic[1, :]# - current_pic[1, :] / zeroth_moment_electron / np.abs(q_electron)
+    bulk_speed_electron[2, :] = bulk_speed_pic[2, :]# - current_pic[2, :] / zeroth_moment_electron / np.abs(q_electron)
     v_pic_electron, x_pic_electron = reset_particles(
         reload_zeroth_moment_electron, bulk_speed_electron, v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
