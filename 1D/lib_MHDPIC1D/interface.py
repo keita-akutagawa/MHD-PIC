@@ -11,7 +11,7 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    #F[-1] = 0.0
+    F[-1] = 0.0
     return F
 
 
