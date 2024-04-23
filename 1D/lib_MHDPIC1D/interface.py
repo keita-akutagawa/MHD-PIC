@@ -11,7 +11,7 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    #F[-1] = 0.0
+    F[-1] = 0.0
     return F
 
 
@@ -367,6 +367,7 @@ def send_PIC_to_MHDinterface(
         index_interface_pic_start, index_interface_pic_end, 
         gamma, m_electron, m_ion, B_pic, 
         zeroth_moment_ion, zeroth_moment_electron, 
+        reload_zeroth_moment_ion, reload_zeroth_moment_electron, 
         first_moment_ion, first_moment_electron, 
         second_moment_ion, second_moment_electron, 
         U
@@ -374,12 +375,14 @@ def send_PIC_to_MHDinterface(
 
     zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start + 1:index_interface_pic_end]
     zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start + 1:index_interface_pic_end]
+    reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start + 1:index_interface_pic_end]
+    reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start + 1:index_interface_pic_end]
     first_moment_ion = first_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
     first_moment_electron = first_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
     second_moment_ion = second_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
     second_moment_electron = second_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
  
-    rho_pic = m_electron * zeroth_moment_electron + m_ion * zeroth_moment_ion
+    rho_pic = m_electron * reload_zeroth_moment_electron + m_ion * reload_zeroth_moment_ion
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
     bulk_speed_ion_pic[0, :] = first_moment_ion[0, :] / (zeroth_moment_ion + 1e-10)
     bulk_speed_ion_pic[1, :] = first_moment_ion[1, :] / (zeroth_moment_ion + 1e-10)
