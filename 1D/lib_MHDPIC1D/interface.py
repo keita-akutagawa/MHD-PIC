@@ -184,26 +184,28 @@ def reset_particles(
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
     for i in range(len(zeroth_moment_pic)):
-        new_particles_v = np.zeros([3, round(zeroth_moment_pic[i])])
-        new_particles_x = np.zeros([3, round(zeroth_moment_pic[i])])
+        num_particle = round(zeroth_moment_pic[i])
+
+        new_particles_v = np.zeros([3, num_particle])
+        new_particles_x = np.zeros([3, num_particle])
         random_number = np.random.randint(1, 100000000)
         new_particles_v[0, :] = np.asarray(
-            stats.norm.rvs(bulk_speed_pic[0, i], np.sqrt(v_th_squared_pic[i]), size=round(zeroth_moment_pic[i]), random_state=random_number)
+            stats.norm.rvs(bulk_speed_pic[0, i], np.sqrt(v_th_squared_pic[i]), size=num_particle, random_state=random_number)
         )
         random_number = np.random.randint(1, 100000000)
         new_particles_v[1, :] = np.asarray(
-            stats.norm.rvs(bulk_speed_pic[1, i], np.sqrt(v_th_squared_pic[i]), size=round(zeroth_moment_pic[i]), random_state=random_number)
+            stats.norm.rvs(bulk_speed_pic[1, i], np.sqrt(v_th_squared_pic[i]), size=num_particle, random_state=random_number)
         )
         random_number = np.random.randint(1, 100000000)
         new_particles_v[2, :] = np.asarray(
-            stats.norm.rvs(bulk_speed_pic[2, i], np.sqrt(v_th_squared_pic[i]), size=round(zeroth_moment_pic[i]), random_state=random_number)
+            stats.norm.rvs(bulk_speed_pic[2, i], np.sqrt(v_th_squared_pic[i]), size=num_particle, random_state=random_number)
         )
         random_number = np.random.randint(1, 100000000)
         rs = np.random.RandomState(random_number)
-        new_particles_x[0, :] = (rs.rand(round(zeroth_moment_pic[i])) - 0.5) * dx \
-                              + (index_interface_pic_start + i) * dx
-        #new_particles_x[0, :] = (np.linspace(-0.5, 0.5, round(zeroth_moment_pic[i]))) * dx \
+        #new_particles_x[0, :] = (rs.rand(num_particle) - 0.5) * dx \
         #                      + (index_interface_pic_start + i) * dx
+        new_particles_x[0, :] = (np.linspace(-0.49, 0.49, num_particle)) * dx \
+                              + (index_interface_pic_start + i) * dx
 
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
@@ -211,6 +213,21 @@ def reset_particles(
     v_pic, x_pic = open_condition_x_left(v_pic, x_pic, 1e-10)
 
     return v_pic, x_pic
+
+
+def convolve_parameter(q, window_size):
+
+    if len(q.shape) == 1:  # 行列ではなくベクトルの場合
+        q = np.convolve(q, np.ones(window_size) / window_size, mode="same")
+        q[:window_size//2] = q[window_size//2]
+        q[-window_size//2:] = q[-window_size//2]
+    elif len(q.shape) == 2:  # 行列の場合
+        for i in range(q.shape[0]):
+            q[i, :] = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="same")
+            q[i, :window_size//2] = q[i, window_size//2]
+            q[i, -window_size//2:] = q[i, -window_size//2]
+
+    return q
 
 
 def send_MHD_to_PICinterface_particle(
@@ -234,11 +251,22 @@ def send_MHD_to_PICinterface_particle(
     second_moment_ion = get_second_moment(c, v_pic_ion, x_pic_ion, nx_pic, dx, second_moment_ion)
     second_moment_electron = get_second_moment(c, v_pic_electron, x_pic_electron, nx_pic, dx, second_moment_electron)
     # 粒子のリロードに関して、粒子数の計算は位置の四捨五入で設定する。そうしないとずれる…！
-    reload_zeroth_moment_ion = np.zeros(nx_pic)
-    reload_zeroth_moment_electron = np.zeros(nx_pic)
-    reload_zeroth_moment_ion = reload_get_zeroth_moment(x_pic_ion, nx_pic, dx, reload_zeroth_moment_ion)
-    reload_zeroth_moment_electron = reload_get_zeroth_moment(x_pic_electron, nx_pic, dx, reload_zeroth_moment_electron)
+    #reload_zeroth_moment_ion = np.zeros(nx_pic)
+    #reload_zeroth_moment_electron = np.zeros(nx_pic)
+    #reload_zeroth_moment_ion = reload_get_zeroth_moment(x_pic_ion, nx_pic, dx, reload_zeroth_moment_ion)
+    #reload_zeroth_moment_electron = reload_get_zeroth_moment(x_pic_electron, nx_pic, dx, reload_zeroth_moment_electron)
 
+    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
+    zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
+    #reload_zeroth_moment_ion = convolve_parameter(reload_zeroth_moment_ion, window_size)
+    #reload_zeroth_moment_electron = convolve_parameter(reload_zeroth_moment_electron, window_size)
+    first_moment_ion = convolve_parameter(first_moment_ion, window_size)
+    first_moment_electron = convolve_parameter(first_moment_electron, window_size)
+    second_moment_ion = convolve_parameter(second_moment_ion, window_size)
+    second_moment_electron = convolve_parameter(second_moment_electron, window_size)
+
+    rho_pic = m_ion * zeroth_moment_ion + m_electron * zeroth_moment_electron
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
     bulk_speed_ion_pic[0, :] = first_moment_ion[0, :] / (zeroth_moment_ion + 1e-10)
     bulk_speed_ion_pic[1, :] = first_moment_ion[1, :] / (zeroth_moment_ion + 1e-10)
@@ -257,6 +285,7 @@ def send_MHD_to_PICinterface_particle(
     v_the_squared_pic = ((second_moment_electron[0, :] + second_moment_electron[4, :] + second_moment_electron[8, :])
                         - zeroth_moment_electron * (bulk_speed_electron_pic[0, :]**2 + bulk_speed_electron_pic[1, :]**2 + bulk_speed_electron_pic[2, :]**2)) \
                         / 3.0 / (zeroth_moment_electron + 1e-10)
+    p_pic = zeroth_moment_electron * m_electron * v_the_squared_pic / 2.0 + zeroth_moment_ion * m_ion * v_thi_squared_pic / 2.0
     q_ion = -1.0 * q_electron
     current_pic = np.zeros(first_moment_ion.shape)
     current_pic[0, :] = q_ion * first_moment_ion[0, :] + q_electron * first_moment_electron[0, :]
@@ -282,16 +311,18 @@ def send_MHD_to_PICinterface_particle(
     current_z_mhd[0] = current_z_mhd[1] 
     current_z_mhd[-1] = current_z_mhd[-2] 
     
-    
+
     zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
     zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
+    rho_pic = rho_pic[index_interface_pic_start:index_interface_pic_end]
     bulk_speed_ion_pic = bulk_speed_ion_pic[:, index_interface_pic_start:index_interface_pic_end]
     bulk_speed_electron_pic = bulk_speed_electron_pic[:, index_interface_pic_start:index_interface_pic_end]
     bulk_speed_pic = bulk_speed_pic[:, index_interface_pic_start:index_interface_pic_end]
     v_thi_squared_pic = v_thi_squared_pic[index_interface_pic_start:index_interface_pic_end]
     v_the_squared_pic = v_the_squared_pic[index_interface_pic_start:index_interface_pic_end]
-    reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
-    reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
+    p_pic = p_pic[index_interface_pic_start:index_interface_pic_end]
+    #reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
+    #reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
     current_pic = current_pic[:, index_interface_pic_start:index_interface_pic_end]
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -302,21 +333,11 @@ def send_MHD_to_PICinterface_particle(
     current_y_mhd = current_y_mhd[index_interface_mhd_start:index_interface_mhd_end]
     current_z_mhd = current_z_mhd[index_interface_mhd_start:index_interface_mhd_end]
     p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
-    
-    ni_mhd = rho_mhd / (m_electron + m_ion)
-    ne_mhd = ni_mhd# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
-    #Ti=Teのつもり
-    v_thi_squared_mhd = p_mhd / ni_mhd / m_ion      
-    v_the_squared_mhd = p_mhd / ne_mhd / m_electron 
-
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
-    reload_zeroth_moment_ion = get_interface_quantity_MHDtoPIC(
-        x_interface_coordinate, ni_mhd, reload_zeroth_moment_ion
-    )
-    reload_zeroth_moment_electron = get_interface_quantity_MHDtoPIC(
-        x_interface_coordinate, ne_mhd, reload_zeroth_moment_electron
+    rho_pic = get_interface_quantity_MHDtoPIC(
+        x_interface_coordinate, rho_mhd, rho_pic
     )
     bulk_speed_pic[0, :] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, u_mhd, bulk_speed_pic[0, :]
@@ -336,16 +357,20 @@ def send_MHD_to_PICinterface_particle(
     current_pic[2, :] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, current_z_mhd, current_pic[2, :]
     )
-    v_thi_squared_pic = get_interface_quantity_MHDtoPIC_temperature(
-        x_interface_coordinate, v_thi_squared_mhd, v_thi_squared_pic
+    p_pic = get_interface_quantity_MHDtoPIC(
+        x_interface_coordinate, p_mhd, p_pic
     )
-    v_the_squared_pic = get_interface_quantity_MHDtoPIC_temperature(
-        x_interface_coordinate, v_the_squared_mhd, v_the_squared_pic
-    )
- 
+
+    ni_pic = rho_pic / (m_electron + m_ion)
+    ne_pic = ni_pic# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
+    #Ti=Teのつもり
+    v_thi_squared_pic = p_pic / ni_pic / m_ion      
+    v_the_squared_pic = p_pic / ne_pic / m_electron 
+
+
     bulk_speed_ion = bulk_speed_pic
     v_pic_ion, x_pic_ion = reset_particles(
-        reload_zeroth_moment_ion, bulk_speed_ion, v_thi_squared_pic,
+        ni_pic, bulk_speed_ion, v_thi_squared_pic,
         index_interface_pic_start, index_interface_pic_end,
         dx, v_pic_ion, x_pic_ion
     )
@@ -354,7 +379,7 @@ def send_MHD_to_PICinterface_particle(
     bulk_speed_electron[1, :] = bulk_speed_pic[1, :]# - current_pic[1, :] / zeroth_moment_electron / np.abs(q_electron)
     bulk_speed_electron[2, :] = bulk_speed_pic[2, :]# - current_pic[2, :] / zeroth_moment_electron / np.abs(q_electron)
     v_pic_electron, x_pic_electron = reset_particles(
-        reload_zeroth_moment_electron, bulk_speed_electron, v_the_squared_pic,
+        ne_pic, bulk_speed_electron, v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic_electron, x_pic_electron
     )
@@ -382,7 +407,7 @@ def send_PIC_to_MHDinterface(
     second_moment_ion = second_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
     second_moment_electron = second_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
  
-    rho_pic = m_electron * reload_zeroth_moment_electron + m_ion * reload_zeroth_moment_ion
+    rho_pic = m_electron * zeroth_moment_electron + m_ion * zeroth_moment_ion
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
     bulk_speed_ion_pic[0, :] = first_moment_ion[0, :] / (zeroth_moment_ion + 1e-10)
     bulk_speed_ion_pic[1, :] = first_moment_ion[1, :] / (zeroth_moment_ion + 1e-10)
