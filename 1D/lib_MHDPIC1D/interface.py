@@ -229,17 +229,16 @@ def reset_particles(
 
 def convolve_parameter(q, window_size):
 
+    convolved_q = q.copy()
     if len(q.shape) == 1:  # 行列ではなくベクトルの場合
-        q = np.convolve(q, np.ones(window_size) / window_size, mode="same")
-        q[:window_size//2] = q[window_size//2]
-        q[-window_size//2:] = q[-window_size//2]
+        tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
+        convolved_q[window_size//2 - 1 : -window_size//2] = tmp_q
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
-            q[i, :] = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="same")
-            q[i, :window_size//2] = q[i, window_size//2]
-            q[i, -window_size//2:] = q[i, -window_size//2]
+            tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
+            convolved_q[i, window_size//2 - 1 : -window_size//2] = tmp_q
 
-    return q
+    return convolved_q
 
 
 def send_MHD_to_PICinterface_particle(
@@ -378,9 +377,9 @@ def send_MHD_to_PICinterface_particle(
         dx, v_pic_ion, x_pic_ion
     )
     bulk_speed_electron = np.zeros(bulk_speed_electron_pic.shape)
-    bulk_speed_electron[0, :] = bulk_speed_pic[0, :]# - current_pic[0, :] / zeroth_moment_electron / np.abs(q_electron)
-    bulk_speed_electron[1, :] = bulk_speed_pic[1, :]# - current_pic[1, :] / zeroth_moment_electron / np.abs(q_electron)
-    bulk_speed_electron[2, :] = bulk_speed_pic[2, :]# - current_pic[2, :] / zeroth_moment_electron / np.abs(q_electron)
+    bulk_speed_electron[0, :] = bulk_speed_pic[0, :] - current_pic[0, :] / ne_pic / np.abs(q_electron)
+    bulk_speed_electron[1, :] = bulk_speed_pic[1, :] - current_pic[1, :] / ne_pic / np.abs(q_electron)
+    bulk_speed_electron[2, :] = bulk_speed_pic[2, :] - current_pic[2, :] / ne_pic / np.abs(q_electron)
     v_pic_electron, x_pic_electron = reset_particles(
         ne_pic, bulk_speed_electron, v_the_squared_pic,
         index_interface_pic_start, index_interface_pic_end, 
