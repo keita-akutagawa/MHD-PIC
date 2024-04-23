@@ -59,6 +59,10 @@ def send_MHD_to_PICinterface_B(
     By_mhd = By_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
     Bz_mhd = Bz_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
 
+    B_pic_tmp = B_pic.copy()
+    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    B_pic_tmp = convolve_parameter(B_pic_tmp, window_size)
+
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
     x_interface_coordinate_half = np.arange(index_interface_pic_start + 0.5, 
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
@@ -66,15 +70,15 @@ def send_MHD_to_PICinterface_B(
     
     B_pic[0, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, Bx_mhd, 
-        B_pic[0, index_interface_pic_start:index_interface_pic_end]
+        B_pic_tmp[0, index_interface_pic_start:index_interface_pic_end]
     )
     B_pic[1, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate_half, By_mhd, 
-        B_pic[1, index_interface_pic_start:index_interface_pic_end - 1]
+        B_pic_tmp[1, index_interface_pic_start:index_interface_pic_end - 1]
     )
     B_pic[2, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate_half, Bz_mhd, 
-        B_pic[2, index_interface_pic_start:index_interface_pic_end - 1]
+        B_pic_tmp[2, index_interface_pic_start:index_interface_pic_end - 1]
     )
 
     return B_pic
@@ -104,6 +108,10 @@ def send_MHD_to_PICinterface_E(
     Ey_mhd = Ey_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Ez_mhd = Ez_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
+    E_pic_tmp = E_pic.copy()
+    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    E_pic_tmp = convolve_parameter(E_pic_tmp, window_size)
+
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
     x_interface_coordinate_half = np.arange(index_interface_pic_start + 0.5, 
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
@@ -111,15 +119,15 @@ def send_MHD_to_PICinterface_E(
     
     E_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate_half, Ex_mhd, 
-        E_pic[0, index_interface_pic_start:index_interface_pic_end - 1]
+        E_pic_tmp[0, index_interface_pic_start:index_interface_pic_end - 1]
     )
     E_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, Ey_mhd, 
-        E_pic[1, index_interface_pic_start:index_interface_pic_end]
+        E_pic_tmp[1, index_interface_pic_start:index_interface_pic_end]
     )
     E_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, Ez_mhd, 
-        E_pic[2, index_interface_pic_start:index_interface_pic_end]
+        E_pic_tmp[2, index_interface_pic_start:index_interface_pic_end]
     )
 
     return E_pic
@@ -152,6 +160,10 @@ def send_MHD_to_PICinterface_current(
     current_y_mhd = current_y_mhd[index_interface_mhd_start:index_interface_mhd_end]
     current_z_mhd = current_z_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
+    current_pic_tmp = current_pic.copy()
+    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    current_pic_tmp = convolve_parameter(current_pic_tmp, window_size)
+
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
     x_interface_coordinate_half = np.arange(index_interface_pic_start + 0.5, 
                                             index_interface_pic_end - index_interface_pic_start - 0.5, 
@@ -159,15 +171,15 @@ def send_MHD_to_PICinterface_current(
     
     current_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate_half, current_x_mhd, 
-        current_pic[0, index_interface_pic_start:index_interface_pic_end - 1]
+        current_pic_tmp[0, index_interface_pic_start:index_interface_pic_end - 1]
     )
     current_pic[1, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, current_y_mhd, 
-        current_pic[1, index_interface_pic_start:index_interface_pic_end]
+        current_pic_tmp[1, index_interface_pic_start:index_interface_pic_end]
     )
     current_pic[2, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, current_z_mhd, 
-        current_pic[2, index_interface_pic_start:index_interface_pic_end]
+        current_pic_tmp[2, index_interface_pic_start:index_interface_pic_end]
     )
 
     return current_pic
@@ -202,10 +214,10 @@ def reset_particles(
         )
         random_number = np.random.randint(1, 100000000)
         rs = np.random.RandomState(random_number)
-        #new_particles_x[0, :] = (rs.rand(num_particle) - 0.5) * dx \
-        #                      + (index_interface_pic_start + i) * dx
-        new_particles_x[0, :] = (np.linspace(-0.49, 0.49, num_particle)) * dx \
+        new_particles_x[0, :] = (rs.rand(num_particle) - 0.5) * dx \
                               + (index_interface_pic_start + i) * dx
+        #new_particles_x[0, :] = (np.linspace(-0.49, 0.49, num_particle)) * dx \
+        #                      + (index_interface_pic_start + i) * dx
 
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
@@ -250,17 +262,10 @@ def send_MHD_to_PICinterface_particle(
     second_moment_electron = np.zeros([9, nx_pic])
     second_moment_ion = get_second_moment(c, v_pic_ion, x_pic_ion, nx_pic, dx, second_moment_ion)
     second_moment_electron = get_second_moment(c, v_pic_electron, x_pic_electron, nx_pic, dx, second_moment_electron)
-    # 粒子のリロードに関して、粒子数の計算は位置の四捨五入で設定する。そうしないとずれる…！
-    #reload_zeroth_moment_ion = np.zeros(nx_pic)
-    #reload_zeroth_moment_electron = np.zeros(nx_pic)
-    #reload_zeroth_moment_ion = reload_get_zeroth_moment(x_pic_ion, nx_pic, dx, reload_zeroth_moment_ion)
-    #reload_zeroth_moment_electron = reload_get_zeroth_moment(x_pic_electron, nx_pic, dx, reload_zeroth_moment_electron)
 
     window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
     zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
     zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
-    #reload_zeroth_moment_ion = convolve_parameter(reload_zeroth_moment_ion, window_size)
-    #reload_zeroth_moment_electron = convolve_parameter(reload_zeroth_moment_electron, window_size)
     first_moment_ion = convolve_parameter(first_moment_ion, window_size)
     first_moment_electron = convolve_parameter(first_moment_electron, window_size)
     second_moment_ion = convolve_parameter(second_moment_ion, window_size)
@@ -321,8 +326,6 @@ def send_MHD_to_PICinterface_particle(
     v_thi_squared_pic = v_thi_squared_pic[index_interface_pic_start:index_interface_pic_end]
     v_the_squared_pic = v_the_squared_pic[index_interface_pic_start:index_interface_pic_end]
     p_pic = p_pic[index_interface_pic_start:index_interface_pic_end]
-    #reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
-    #reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
     current_pic = current_pic[:, index_interface_pic_start:index_interface_pic_end]
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -392,16 +395,21 @@ def send_PIC_to_MHDinterface(
         index_interface_pic_start, index_interface_pic_end, 
         gamma, m_electron, m_ion, B_pic, 
         zeroth_moment_ion, zeroth_moment_electron, 
-        reload_zeroth_moment_ion, reload_zeroth_moment_electron, 
         first_moment_ion, first_moment_electron, 
         second_moment_ion, second_moment_electron, 
         U
     ):
 
+    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
+    zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
+    first_moment_ion = convolve_parameter(first_moment_ion, window_size)
+    first_moment_electron = convolve_parameter(first_moment_electron, window_size)
+    second_moment_ion = convolve_parameter(second_moment_ion, window_size)
+    second_moment_electron = convolve_parameter(second_moment_electron, window_size)
+    
     zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start + 1:index_interface_pic_end]
     zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start + 1:index_interface_pic_end]
-    reload_zeroth_moment_ion = reload_zeroth_moment_ion[index_interface_pic_start + 1:index_interface_pic_end]
-    reload_zeroth_moment_electron = reload_zeroth_moment_electron[index_interface_pic_start + 1:index_interface_pic_end]
     first_moment_ion = first_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
     first_moment_electron = first_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
     second_moment_ion = second_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
@@ -431,6 +439,9 @@ def send_PIC_to_MHDinterface(
     Bx_pic_tmp = B_pic[0, :]
     By_pic_tmp = 0.5 * (B_pic[1, :] + np.roll(B_pic[1, :], 1, axis=0))
     Bz_pic_tmp = 0.5 * (B_pic[2, :] + np.roll(B_pic[2, :], 1, axis=0))
+    Bx_pic_tmp = convolve_parameter(Bx_pic_tmp, window_size)
+    By_pic_tmp = convolve_parameter(By_pic_tmp, window_size)
+    Bz_pic_tmp = convolve_parameter(Bz_pic_tmp, window_size)
     Bx_pic = Bx_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
     By_pic = By_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
     Bz_pic = Bz_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
