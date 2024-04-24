@@ -42,17 +42,18 @@ def get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, q_mhd, q
 def convolve_parameter(q, window_size):
 
     convolved_q = q.copy()
-    if len(q.shape) == 1:  # 行列ではなくベクトルの場合
+    start_grid = 0
+    if len(q.shape) == 1:  # ベクトルの場合
         tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
-        convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
-        #convolved_q[:window_size//2] = convolved_q[window_size//2]
-        #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
+        convolved_q[window_size//2 + start_grid : -window_size//2 + 1] = tmp_q[start_grid:]
+        convolved_q[:window_size//2] = convolved_q[window_size//2]
+        convolved_q[-window_size//2:] = convolved_q[-window_size//2]
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
             tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
-            convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
-            #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
-            #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
+            convolved_q[i, window_size//2 + start_grid : -window_size//2 + 1] = tmp_q[start_grid:]
+            convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
+            convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
 
     return convolved_q
 
@@ -124,7 +125,7 @@ def send_MHD_to_PICinterface_E(
     E_pic_tmp = E_pic.copy()
     window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
     E_pic_tmp = convolve_parameter(E_pic_tmp, window_size)
-
+    
     Ex_mhd = Ex_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
     Ey_mhd = Ey_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Ez_mhd = Ez_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -421,6 +422,9 @@ def send_PIC_to_MHDinterface(
     first_moment_electron = first_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
     second_moment_ion = second_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
     second_moment_electron = second_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
+    Bx_pic = Bx_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
+    By_pic = By_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
+    Bz_pic = Bz_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
  
     rho_pic = m_electron * zeroth_moment_electron + m_ion * zeroth_moment_ion
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
@@ -442,10 +446,6 @@ def send_PIC_to_MHDinterface(
                         - zeroth_moment_electron * (bulk_speed_electron_pic[0, :]**2 + bulk_speed_electron_pic[1, :]**2 + bulk_speed_electron_pic[2, :]**2)) \
                         / 3.0 / (zeroth_moment_electron + 1e-10)
     p_pic = zeroth_moment_electron * m_electron * v_the_squared_pic / 2.0 + zeroth_moment_ion * m_ion * v_thi_squared_pic / 2.0
-
-    Bx_pic = Bx_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
-    By_pic = By_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
-    Bz_pic = Bz_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
 
     rho_mhd = U[0, :]
     u_mhd = U[1, :] / rho_mhd
