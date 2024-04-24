@@ -39,6 +39,23 @@ def get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, q_mhd, q
     return q_interface
 
 
+def convolve_parameter(q, window_size):
+
+    convolved_q = q.copy()
+    if len(q.shape) == 1:  # 行列ではなくベクトルの場合
+        tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
+        convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
+        #convolved_q[:window_size//2] = convolved_q[window_size//2]
+        #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
+    elif len(q.shape) == 2:  # 行列の場合
+        for i in range(q.shape[0]):
+            tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
+            convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
+            #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
+            #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
+
+    return convolved_q
+
 
 def send_MHD_to_PICinterface_B(
         index_interface_mhd_start, index_interface_mhd_end, 
@@ -56,8 +73,8 @@ def send_MHD_to_PICinterface_B(
     Bz_mhd = 0.5 * (Bz_mhd + np.roll(Bz_mhd, -1, axis=0))
 
     B_pic_tmp = B_pic.copy()
-    #window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
-    #B_pic_tmp = convolve_parameter(B_pic_tmp, window_size)
+    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    B_pic_tmp = convolve_parameter(B_pic_tmp, window_size)
     
     Bx_mhd = Bx_mhd[index_interface_mhd_start:index_interface_mhd_end]
     By_mhd = By_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
@@ -225,24 +242,6 @@ def reset_particles(
     v_pic, x_pic = open_condition_x_left(v_pic, x_pic, 0.0)
 
     return v_pic, x_pic
-
-
-def convolve_parameter(q, window_size):
-
-    convolved_q = q.copy()
-    if len(q.shape) == 1:  # 行列ではなくベクトルの場合
-        tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
-        convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
-        convolved_q[:window_size//2] = convolved_q[window_size//2]
-        convolved_q[-window_size//2:] = convolved_q[-window_size//2]
-    elif len(q.shape) == 2:  # 行列の場合
-        for i in range(q.shape[0]):
-            tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
-            convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
-            convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
-            convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
-
-    return convolved_q
 
 
 def send_MHD_to_PICinterface_particle(
