@@ -11,12 +11,12 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    F[-1] = 0.0
+    #F[-1] = 0.0
     return F
 
 
 def get_interface_quantity_MHDtoPIC(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function(x_interface_coordinate)
+    F = interlocking_function_temperature(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
 
@@ -28,7 +28,7 @@ def get_interface_quantity_MHDtoPIC_temperature(x_interface_coordinate, q_mhd, q
 
 
 def get_interface_quantity_PICtoMHD(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function(x_interface_coordinate)
+    F = interlocking_function_temperature(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
 
@@ -46,14 +46,14 @@ def convolve_parameter(q, window_size):
     if len(q.shape) == 1:  # ベクトルの場合
         tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
         convolved_q[window_size//2 + start_grid : -window_size//2 + 1] = tmp_q[start_grid:]
-        convolved_q[:window_size//2] = convolved_q[window_size//2]
-        convolved_q[-window_size//2:] = convolved_q[-window_size//2]
+        #convolved_q[:window_size//2] = convolved_q[window_size//2]
+        #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
             tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
             convolved_q[i, window_size//2 + start_grid : -window_size//2 + 1] = tmp_q[start_grid:]
-            convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
-            convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
+            #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
+            #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
 
     return convolved_q
 
@@ -416,15 +416,15 @@ def send_PIC_to_MHDinterface(
     By_pic_tmp = convolve_parameter(By_pic_tmp, window_size)
     Bz_pic_tmp = convolve_parameter(Bz_pic_tmp, window_size)
 
-    zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start + 1:index_interface_pic_end]
-    zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start + 1:index_interface_pic_end]
-    first_moment_ion = first_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
-    first_moment_electron = first_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
-    second_moment_ion = second_moment_ion[:, index_interface_pic_start + 1:index_interface_pic_end]
-    second_moment_electron = second_moment_electron[:, index_interface_pic_start + 1:index_interface_pic_end]
-    Bx_pic = Bx_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
-    By_pic = By_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
-    Bz_pic = Bz_pic_tmp[index_interface_pic_start + 1:index_interface_pic_end]
+    zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
+    zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
+    first_moment_ion = first_moment_ion[:, index_interface_pic_start:index_interface_pic_end]
+    first_moment_electron = first_moment_electron[:, index_interface_pic_start:index_interface_pic_end]
+    second_moment_ion = second_moment_ion[:, index_interface_pic_start:index_interface_pic_end]
+    second_moment_electron = second_moment_electron[:, index_interface_pic_start:index_interface_pic_end]
+    Bx_pic = Bx_pic_tmp[index_interface_pic_start:index_interface_pic_end]
+    By_pic = By_pic_tmp[index_interface_pic_start:index_interface_pic_end]
+    Bz_pic = Bz_pic_tmp[index_interface_pic_start:index_interface_pic_end]
  
     rho_pic = m_electron * zeroth_moment_electron + m_ion * zeroth_moment_ion
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
@@ -459,16 +459,16 @@ def send_PIC_to_MHDinterface(
           * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
               - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
     
-    rho_mhd = rho_mhd[index_interface_mhd_start + 1:index_interface_mhd_end]
-    u_mhd = u_mhd[index_interface_mhd_start + 1:index_interface_mhd_end] / rho_mhd
-    v_mhd = v_mhd[index_interface_mhd_start + 1:index_interface_mhd_end] / rho_mhd
-    w_mhd = w_mhd[index_interface_mhd_start + 1:index_interface_mhd_end] / rho_mhd
-    Bx_mhd = Bx_mhd[index_interface_mhd_start + 1:index_interface_mhd_end]
-    By_mhd = By_mhd[index_interface_mhd_start + 1:index_interface_mhd_end]
-    Bz_mhd = Bz_mhd[index_interface_mhd_start + 1:index_interface_mhd_end]
-    p_mhd = p_mhd[index_interface_mhd_start + 1:index_interface_mhd_end]
+    rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    u_mhd = u_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    v_mhd = v_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    w_mhd = w_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    Bx_mhd = Bx_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    By_mhd = By_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    Bz_mhd = Bz_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
-    x_interface_coordinate = np.arange(1, index_interface_pic_end - index_interface_pic_start, 1)
+    x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
     rho_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, rho_mhd, rho_pic)
     u_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, u_mhd, bulk_speed_pic[0, :])
@@ -479,16 +479,16 @@ def send_PIC_to_MHDinterface(
     Bz_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, Bz_mhd, Bz_pic)
     p_mhd = get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, p_mhd, p_pic)
 
-    U[0, index_interface_mhd_start + 1:index_interface_mhd_end] = rho_mhd
-    U[1, index_interface_mhd_start + 1:index_interface_mhd_end] = u_mhd * rho_mhd
-    U[2, index_interface_mhd_start + 1:index_interface_mhd_end] = v_mhd * rho_mhd
-    U[3, index_interface_mhd_start + 1:index_interface_mhd_end] = w_mhd * rho_mhd
-    U[4, index_interface_mhd_start + 1:index_interface_mhd_end] = Bx_mhd
-    U[5, index_interface_mhd_start + 1:index_interface_mhd_end] = By_mhd
-    U[6, index_interface_mhd_start + 1:index_interface_mhd_end] = Bz_mhd
+    U[0, index_interface_mhd_start:index_interface_mhd_end] = rho_mhd
+    U[1, index_interface_mhd_start:index_interface_mhd_end] = u_mhd * rho_mhd
+    U[2, index_interface_mhd_start:index_interface_mhd_end] = v_mhd * rho_mhd
+    U[3, index_interface_mhd_start:index_interface_mhd_end] = w_mhd * rho_mhd
+    U[4, index_interface_mhd_start:index_interface_mhd_end] = Bx_mhd
+    U[5, index_interface_mhd_start:index_interface_mhd_end] = By_mhd
+    U[6, index_interface_mhd_start:index_interface_mhd_end] = Bz_mhd
     e_mhd = p_mhd / (gamma - 1.0) + 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2) \
           + 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2)
-    U[7, index_interface_mhd_start + 1:index_interface_mhd_end] = e_mhd
+    U[7, index_interface_mhd_start:index_interface_mhd_end] = e_mhd
 
     return U
 
