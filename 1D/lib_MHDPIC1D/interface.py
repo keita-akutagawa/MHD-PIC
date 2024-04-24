@@ -4,7 +4,7 @@ from scipy import stats
 
 def interlocking_function(x_interface_coordinate):
     #x_mhd = 0.0にする
-    F = 0.5 * (1.0 + np.cos(np.pi * (x_interface_coordinate - 0.0) / (x_interface_coordinate[-1] - 0.0)))
+    F = 0.5 * (1.0 + np.cos(np.pi * (x_interface_coordinate - x_interface_coordinate[0]) / (x_interface_coordinate[-1] - x_interface_coordinate[0])))
     return F
 
 
@@ -42,16 +42,15 @@ def get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, q_mhd, q
 def convolve_parameter(q, window_size):
 
     convolved_q = q.copy()
-    start_grid = 0
     if len(q.shape) == 1:  # ベクトルの場合
         tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
-        convolved_q[window_size//2 + start_grid : -window_size//2 + 1] = tmp_q[start_grid:]
+        convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
         #convolved_q[:window_size//2] = convolved_q[window_size//2]
         #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
             tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
-            convolved_q[i, window_size//2 + start_grid : -window_size//2 + 1] = tmp_q[start_grid:]
+            convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
             #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
             #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
 
@@ -81,9 +80,10 @@ def send_MHD_to_PICinterface_B(
     By_mhd = By_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
     Bz_mhd = Bz_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
 
-    x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
+    x_interface_coordinate = np.arange(index_interface_pic_start, index_interface_pic_end, 1)
+    # 微妙にずれるから直すこと
     x_interface_coordinate_half = np.arange(index_interface_pic_start + 0.5, 
-                                            index_interface_pic_end - index_interface_pic_start - 0.5, 
+                                            index_interface_pic_end - 0.5, 
                                             1)
     
     B_pic[0, index_interface_pic_start:index_interface_pic_end] = get_interface_quantity_MHDtoPIC(
@@ -130,9 +130,9 @@ def send_MHD_to_PICinterface_E(
     Ey_mhd = Ey_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Ez_mhd = Ez_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
-    x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
+    x_interface_coordinate = np.arange(index_interface_pic_start, index_interface_pic_end, 1)
     x_interface_coordinate_half = np.arange(index_interface_pic_start + 0.5, 
-                                            index_interface_pic_end - index_interface_pic_start - 0.5, 
+                                            index_interface_pic_end - 0.5, 
                                             1)
     
     E_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_MHDtoPIC(
@@ -182,9 +182,9 @@ def send_MHD_to_PICinterface_current(
     current_y_mhd = current_y_mhd[index_interface_mhd_start:index_interface_mhd_end]
     current_z_mhd = current_z_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
-    x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
+    x_interface_coordinate = np.arange(index_interface_pic_start, index_interface_pic_end, 1)
     x_interface_coordinate_half = np.arange(index_interface_pic_start + 0.5, 
-                                            index_interface_pic_end - index_interface_pic_start - 0.5, 
+                                            index_interface_pic_end - 0.5, 
                                             1)
     
     current_pic[0, index_interface_pic_start:index_interface_pic_end - 1] = get_interface_quantity_MHDtoPIC(
@@ -209,7 +209,8 @@ def reset_particles(
         dx, v_pic, x_pic
     ):
     
-    delete_index = np.where(x_pic[0, :] < index_interface_pic_end * dx - 0.5 * dx)[0]
+    delete_index = np.where((x_pic[0, :] < index_interface_pic_end * dx - 0.5 * dx) 
+                            & (x_pic[0, :] > index_interface_pic_start * dx - 0.5 * dx))[0]
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
@@ -240,7 +241,7 @@ def reset_particles(
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
     
-    v_pic, x_pic = open_condition_x_left(v_pic, x_pic, 0.0)
+    #v_pic, x_pic = open_condition_x_left(v_pic, x_pic, 0.0)
 
     return v_pic, x_pic
 
@@ -493,25 +494,8 @@ def send_PIC_to_MHDinterface(
     return U
 
 
+
 # PIC用
-
-def open_condition_x_left(v_pic, x_pic, x_min):
-
-    delete_index = np.where(x_pic[0, :] < x_min) 
-    x_pic = np.delete(x_pic, delete_index, axis=1)
-    v_pic = np.delete(v_pic, delete_index, axis=1)
-
-    return v_pic, x_pic
-
-
-def open_condition_x_right(v_pic, x_pic, x_min, x_max):
-
-    delete_index = np.where((x_pic[0, :] > x_min) & (x_pic[0, :] < x_max)) 
-    x_pic = np.delete(x_pic, delete_index, axis=1)
-    v_pic = np.delete(v_pic, delete_index, axis=1)
-
-    return v_pic, x_pic
-
 
 def get_zeroth_moment(x, n_x, dx, zeroth_moment):
     x_index = np.floor(x[0, :] / dx).astype(int)
