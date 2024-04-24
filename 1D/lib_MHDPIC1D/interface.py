@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import stats 
+from lib_MHDPIC1D.pic1d import open_condition_x_left
 
 
 def interlocking_function(x_interface_coordinate):
@@ -205,16 +206,16 @@ def send_MHD_to_PICinterface_current(
 
 def reset_particles(
         zeroth_moment_pic, bulk_speed_pic, v_th_squared_pic,
-        index_interface_pic_start, index_interface_pic_end, 
+        reset_start_index, reset_end_index, 
         dx, v_pic, x_pic
     ):
     
-    delete_index = np.where((x_pic[0, :] < index_interface_pic_end * dx - 0.5 * dx) 
-                            & (x_pic[0, :] > index_interface_pic_start * dx - 0.5 * dx))[0]
+    delete_index = np.where((x_pic[0, :] < reset_end_index * dx - 0.5 * dx) 
+                            & (x_pic[0, :] > reset_start_index * dx - 0.5 * dx))[0]
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
-    for i in range(len(zeroth_moment_pic)):
+    for i in range(reset_start_index, reset_end_index, 1):
         num_particle = round(zeroth_moment_pic[i])
 
         new_particles_v = np.zeros([3, num_particle])
@@ -234,14 +235,14 @@ def reset_particles(
         random_number = np.random.randint(1, 100000000)
         rs = np.random.RandomState(random_number)
         new_particles_x[0, :] = (rs.rand(num_particle) - 0.5) * dx \
-                              + (index_interface_pic_start + i) * dx
+                              + (reset_start_index + i) * dx
         #new_particles_x[0, :] = (np.linspace(-0.49, 0.49, num_particle)) * dx \
-        #                      + (index_interface_pic_start + i) * dx
+        #                      + (reset_start_index + i) * dx
 
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
     
-    #v_pic, x_pic = open_condition_x_left(v_pic, x_pic, 0.0)
+    v_pic, x_pic = open_condition_x_left(v_pic, x_pic, 0.0)
 
     return v_pic, x_pic
 
@@ -373,10 +374,13 @@ def send_MHD_to_PICinterface_particle(
     v_thi_squared_pic = p_pic / ni_pic / m_ion      
     v_the_squared_pic = p_pic / ne_pic / m_electron 
 
+    reset_start_index = index_interface_pic_start
+    reset_end_index = 30
+
     bulk_speed_ion = bulk_speed_pic
     v_pic_ion, x_pic_ion = reset_particles(
         ni_pic, bulk_speed_ion, v_thi_squared_pic,
-        index_interface_pic_start, index_interface_pic_end,
+        reset_start_index, reset_end_index, 
         dx, v_pic_ion, x_pic_ion
     )
     bulk_speed_electron = np.zeros(bulk_speed_electron_pic.shape)
@@ -385,7 +389,7 @@ def send_MHD_to_PICinterface_particle(
     bulk_speed_electron[2, :] = bulk_speed_pic[2, :] - current_pic[2, :] / ne_pic / np.abs(q_electron)
     v_pic_electron, x_pic_electron = reset_particles(
         ne_pic, bulk_speed_electron, v_the_squared_pic,
-        index_interface_pic_start, index_interface_pic_end, 
+        reset_start_index, reset_end_index,  
         dx, v_pic_electron, x_pic_electron
     )
     
