@@ -11,12 +11,12 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    #F[-1] = 0.0
+    F[-1] = 0.0
     return F
 
 
 def get_interface_quantity_MHDtoPIC(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function_temperature(x_interface_coordinate)
+    F = interlocking_function(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
 
@@ -28,7 +28,7 @@ def get_interface_quantity_MHDtoPIC_temperature(x_interface_coordinate, q_mhd, q
 
 
 def get_interface_quantity_PICtoMHD(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function_temperature(x_interface_coordinate)
+    F = interlocking_function(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
 
