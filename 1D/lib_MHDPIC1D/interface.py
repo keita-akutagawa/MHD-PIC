@@ -74,7 +74,7 @@ def send_MHD_to_PICinterface_B(
     Bz_mhd = 0.5 * (Bz_mhd + np.roll(Bz_mhd, -1, axis=0))
 
     B_pic_tmp = B_pic.copy()
-    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 70#int((index_interface_pic_end - index_interface_pic_start) / 4)
     B_pic_tmp = convolve_parameter(B_pic_tmp, window_size)
     
     Bx_mhd = Bx_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -124,7 +124,7 @@ def send_MHD_to_PICinterface_E(
     Ex_mhd = 0.5 * (Ex_mhd + np.roll(Ex_mhd, -1, axis=0))
 
     E_pic_tmp = E_pic.copy()
-    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 70#int((index_interface_pic_end - index_interface_pic_start) / 4)
     E_pic_tmp = convolve_parameter(E_pic_tmp, window_size)
     
     Ex_mhd = Ex_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
@@ -176,7 +176,7 @@ def send_MHD_to_PICinterface_current(
     current_x_mhd[-1] = current_x_mhd[-2]
 
     current_pic_tmp = current_pic.copy()
-    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 70#int((index_interface_pic_end - index_interface_pic_start) / 4)
     current_pic_tmp = convolve_parameter(current_pic_tmp, window_size)
     
     current_x_mhd = current_x_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
@@ -268,7 +268,7 @@ def send_MHD_to_PICinterface_particle(
     second_moment_ion = get_second_moment(c, v_pic_ion, x_pic_ion, nx_pic, dx, second_moment_ion)
     second_moment_electron = get_second_moment(c, v_pic_electron, x_pic_electron, nx_pic, dx, second_moment_electron)
 
-    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 70#int((index_interface_pic_end - index_interface_pic_start) / 4)
     zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
     zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
     first_moment_ion = convolve_parameter(first_moment_ion, window_size)
@@ -375,7 +375,7 @@ def send_MHD_to_PICinterface_particle(
     v_the_squared_pic = p_pic / ne_pic / m_electron 
 
     reset_start_index = index_interface_pic_start
-    reset_end_index = 30
+    reset_end_index = 70
 
     bulk_speed_ion = bulk_speed_pic
     v_pic_ion, x_pic_ion = reset_particles(
@@ -406,7 +406,7 @@ def send_PIC_to_MHDinterface(
         U
     ):
 
-    window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 70#int((index_interface_pic_end - index_interface_pic_start) / 4)
     zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
     zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
     first_moment_ion = convolve_parameter(first_moment_ion, window_size)
