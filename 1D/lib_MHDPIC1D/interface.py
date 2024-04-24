@@ -375,7 +375,7 @@ def send_MHD_to_PICinterface_particle(
     v_the_squared_pic = p_pic / ne_pic / m_electron 
 
     reset_start_index = index_interface_pic_start
-    reset_end_index = 70
+    reset_end_index = 20
 
     bulk_speed_ion = bulk_speed_pic
     v_pic_ion, x_pic_ion = reset_particles(
