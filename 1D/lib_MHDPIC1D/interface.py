@@ -170,10 +170,10 @@ def send_MHD_to_PICinterface_current(
     current_y_mhd[0] = current_y_mhd[1] 
     current_y_mhd[-1] = current_y_mhd[-2] 
     current_z_mhd[0] = current_z_mhd[1] 
-    current_z_mhd[-1] = current_z_mhd[-2]
+    current_z_mhd[-1] = current_z_mhd[-2] 
     current_x_mhd = 0.5 * (current_x_mhd + np.roll(current_x_mhd, -1, axis=0))
-    current_x_mhd[0] = current_x_mhd[1]
-    current_x_mhd[-1] = current_x_mhd[-2]
+    current_x_mhd[0] = current_x_mhd[1] 
+    current_x_mhd[-1] = current_x_mhd[-2] 
 
     current_pic_tmp = current_pic.copy()
     window_size = int((index_interface_pic_end - index_interface_pic_start) / 4)
@@ -213,13 +213,15 @@ def reset_particles(
     x_interface_coordinate = np.arange(index_interface_pic_start, index_interface_pic_end, 1)
     F = interlocking_function(x_interface_coordinate)
 
-    for i in range(len(zeroth_moment_pic)):
+    for i in range(5):
         delete_index = np.where((x_pic[0, :] < (i + index_interface_pic_start + 1) * dx - 0.5 * dx) 
                                 & (x_pic[0, :] > (i + index_interface_pic_start) * dx - 0.5 * dx))[0]
 
         delete_num_particle = round(len(delete_index) * F[i])
         
-        delete_index = np.random.choice(delete_index, size=delete_num_particle, replace=False)
+        random_number = np.random.randint(1, 100000000)
+        rs = np.random.RandomState(random_number)
+        delete_index = rs.choice(delete_index, size=delete_num_particle, replace=False)
         
         x_pic = np.delete(x_pic, delete_index, axis=1)
         v_pic = np.delete(v_pic, delete_index, axis=1)
