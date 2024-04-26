@@ -213,7 +213,7 @@ def reset_particles(
     x_interface_coordinate = np.arange(index_interface_pic_start, index_interface_pic_end, 1)
     F = interlocking_function(x_interface_coordinate)
 
-    for i in range(5):
+    for i in range(len(zeroth_moment_pic) - 10):
         delete_index = np.where((x_pic[0, :] < (i + index_interface_pic_start + 1) * dx - 0.5 * dx) 
                                 & (x_pic[0, :] > (i + index_interface_pic_start) * dx - 0.5 * dx))[0]
 
