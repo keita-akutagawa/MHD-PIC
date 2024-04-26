@@ -223,9 +223,9 @@ def reset_particles(
         
         x_pic = np.delete(x_pic, delete_index, axis=1)
         v_pic = np.delete(v_pic, delete_index, axis=1)
-        
-        reload_num_particle = round(zeroth_moment_pic[i] * F[i])
 
+        reload_num_particle = round(zeroth_moment_pic[i] * F[i])
+        
         new_particles_v = np.zeros([3, reload_num_particle])
         new_particles_x = np.zeros([3, reload_num_particle])
         random_number = np.random.randint(1, 100000000)
