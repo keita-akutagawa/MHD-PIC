@@ -205,42 +205,47 @@ def send_MHD_to_PICinterface_current(
 
 
 def reset_particles(
-        reset_zeroth_moment_pic, bulk_speed_pic, v_th_squared_pic,
-        reset_start_index, reset_end_index, 
+        zeroth_moment_pic, bulk_speed_pic, v_th_squared_pic,
+        index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic, x_pic
     ):
 
-    for i in range(len(reset_zeroth_moment_pic)):
-        delete_index = np.where((x_pic[0, :] < (i + reset_start_index + 1) * dx - 0.5 * dx) 
-                                & (x_pic[0, :] > (i + reset_start_index) * dx - 0.5 * dx))[0]
+    x_interface_coordinate = np.arange(index_interface_pic_start, index_interface_pic_end, 1)
+    F = interlocking_function(x_interface_coordinate)
 
-        reset_num_particle = np.min([round(reset_zeroth_moment_pic[i]), len(delete_index)])
+    for i in range(len(zeroth_moment_pic)):
+        delete_index = np.where((x_pic[0, :] < (i + index_interface_pic_start + 1) * dx - 0.5 * dx) 
+                                & (x_pic[0, :] > (i + index_interface_pic_start) * dx - 0.5 * dx))[0]
+
+        delete_num_particle = round(len(delete_index) * F[i])
         
-        delete_index = np.random.choice(delete_index, size=reset_num_particle, replace=False)
+        delete_index = np.random.choice(delete_index, size=delete_num_particle, replace=False)
         
         x_pic = np.delete(x_pic, delete_index, axis=1)
         v_pic = np.delete(v_pic, delete_index, axis=1)
 
-        new_particles_v = np.zeros([3, reset_num_particle])
-        new_particles_x = np.zeros([3, reset_num_particle])
+        reload_num_particle = round(zeroth_moment_pic[i] * F[i])
+
+        new_particles_v = np.zeros([3, reload_num_particle])
+        new_particles_x = np.zeros([3, reload_num_particle])
         random_number = np.random.randint(1, 100000000)
         new_particles_v[0, :] = np.asarray(
-            stats.norm.rvs(bulk_speed_pic[0, i], np.sqrt(v_th_squared_pic[i]), size=reset_num_particle, random_state=random_number)
+            stats.norm.rvs(bulk_speed_pic[0, i], np.sqrt(v_th_squared_pic[i]), size=reload_num_particle, random_state=random_number)
         )
         random_number = np.random.randint(1, 100000000)
         new_particles_v[1, :] = np.asarray(
-            stats.norm.rvs(bulk_speed_pic[1, i], np.sqrt(v_th_squared_pic[i]), size=reset_num_particle, random_state=random_number)
+            stats.norm.rvs(bulk_speed_pic[1, i], np.sqrt(v_th_squared_pic[i]), size=reload_num_particle, random_state=random_number)
         )
         random_number = np.random.randint(1, 100000000)
         new_particles_v[2, :] = np.asarray(
-            stats.norm.rvs(bulk_speed_pic[2, i], np.sqrt(v_th_squared_pic[i]), size=reset_num_particle, random_state=random_number)
+            stats.norm.rvs(bulk_speed_pic[2, i], np.sqrt(v_th_squared_pic[i]), size=reload_num_particle, random_state=random_number)
         )
         random_number = np.random.randint(1, 100000000)
         rs = np.random.RandomState(random_number)
-        new_particles_x[0, :] = (rs.rand(reset_num_particle) - 0.5) * dx \
-                              + (reset_start_index + i) * dx
+        new_particles_x[0, :] = (rs.rand(reload_num_particle) - 0.5) * dx \
+                              + (index_interface_pic_start + i) * dx
         #new_particles_x[0, :] = (np.linspace(-0.49, 0.49, reset_num_particle)) * dx \
-        #                      + (reset_start_index + i) * dx
+        #                      + (index_interface_pic_start + i) * dx
 
         v_pic = np.hstack([v_pic, new_particles_v])
         x_pic = np.hstack([x_pic, new_particles_x])
@@ -377,15 +382,11 @@ def send_MHD_to_PICinterface_particle(
     v_thi_squared_pic = p_pic / ni_pic / m_ion      
     v_the_squared_pic = p_pic / ne_pic / m_electron 
 
-    reset_start_index = index_interface_pic_start
-    reset_end_index = index_interface_pic_end
-
-    F = interlocking_function(x_interface_coordinate)
 
     bulk_speed_ion = bulk_speed_pic
     v_pic_ion, x_pic_ion = reset_particles(
-        ni_pic * (1.0 - F), bulk_speed_ion, v_thi_squared_pic,
-        reset_start_index, reset_end_index, 
+        ni_pic, bulk_speed_ion, v_thi_squared_pic,
+        index_interface_pic_start, index_interface_pic_end, 
         dx, v_pic_ion, x_pic_ion
     )
     bulk_speed_electron = np.zeros(bulk_speed_electron_pic.shape)
@@ -393,8 +394,8 @@ def send_MHD_to_PICinterface_particle(
     bulk_speed_electron[1, :] = bulk_speed_pic[1, :] - current_pic[1, :] / ne_pic / np.abs(q_electron)
     bulk_speed_electron[2, :] = bulk_speed_pic[2, :] - current_pic[2, :] / ne_pic / np.abs(q_electron)
     v_pic_electron, x_pic_electron = reset_particles(
-        ne_pic * (1.0 - F), bulk_speed_electron, v_the_squared_pic,
-        reset_start_index, reset_end_index,  
+        ne_pic, bulk_speed_electron, v_the_squared_pic,
+        index_interface_pic_start, index_interface_pic_end,  
         dx, v_pic_electron, x_pic_electron
     )
     
