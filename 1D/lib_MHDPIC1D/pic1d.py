@@ -174,7 +174,7 @@ def refrective_condition_x_right(v, x, x_max):
 
 def open_condition_x_left(v_pic, x_pic, x_min):
 
-    delete_index = np.where(x_pic[0, :] < x_min) 
+    delete_index = np.where(x_pic[0, :] <= x_min) 
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
@@ -183,7 +183,7 @@ def open_condition_x_left(v_pic, x_pic, x_min):
 
 def open_condition_x_right(v_pic, x_pic, x_max):
 
-    delete_index = np.where(x_pic[0, :] > x_max) 
+    delete_index = np.where(x_pic[0, :] >= x_max) 
     x_pic = np.delete(x_pic, delete_index, axis=1)
     v_pic = np.delete(v_pic, delete_index, axis=1)
 
