@@ -16,6 +16,12 @@ def interlocking_function_temperature(x_interface_coordinate):
     return F
 
 
+def interlocking_function_reload(x_interface_coordinate):
+    #x_mhd = 0.0にする
+    F = 1.0 - (x_interface_coordinate - x_interface_coordinate[0]) / (x_interface_coordinate[-1] - x_interface_coordinate[0])
+    return F
+
+
 def get_interface_quantity_MHDtoPIC(x_interface_coordinate, q_mhd, q_pic):
     F = interlocking_function(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
@@ -46,14 +52,14 @@ def convolve_parameter(q, window_size):
     if len(q.shape) == 1:  # ベクトルの場合
         tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
         convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
-        #convolved_q[:window_size//2] = convolved_q[window_size//2]
-        #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
+        convolved_q[:window_size//2] = convolved_q[window_size//2]
+        convolved_q[-window_size//2:] = convolved_q[-window_size//2]
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
             tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
             convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
-            #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
-            #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
+            convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
+            convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
 
     return convolved_q
 
@@ -74,8 +80,11 @@ def send_MHD_to_PICinterface_B(
     Bz_mhd = 0.5 * (Bz_mhd + np.roll(Bz_mhd, -1, axis=0))
 
     B_pic_tmp = B_pic.copy()
-    window_size = 20 #int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 3#int((index_interface_pic_end - index_interface_pic_start) / 4)
     B_pic_tmp = convolve_parameter(B_pic_tmp, window_size)
+    #Bx_mhd = convolve_parameter(Bx_mhd, window_size)
+    #By_mhd = convolve_parameter(By_mhd, window_size)
+    #Bz_mhd = convolve_parameter(Bz_mhd, window_size)
     
     Bx_mhd = Bx_mhd[index_interface_mhd_start:index_interface_mhd_end]
     By_mhd = By_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
@@ -124,8 +133,11 @@ def send_MHD_to_PICinterface_E(
     Ex_mhd = 0.5 * (Ex_mhd + np.roll(Ex_mhd, -1, axis=0))
 
     E_pic_tmp = E_pic.copy()
-    window_size = 20 #int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 3#int((index_interface_pic_end - index_interface_pic_start) / 4)
     E_pic_tmp = convolve_parameter(E_pic_tmp, window_size)
+    #Ex_mhd = convolve_parameter(Ex_mhd, window_size)
+    #Ey_mhd = convolve_parameter(Ey_mhd, window_size)
+    #Ez_mhd = convolve_parameter(Ez_mhd, window_size)
     
     Ex_mhd = Ex_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
     Ey_mhd = Ey_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -176,8 +188,11 @@ def send_MHD_to_PICinterface_current(
     current_x_mhd[-1] = current_x_mhd[-2] 
 
     current_pic_tmp = current_pic.copy()
-    window_size = 20 #int((index_interface_pic_end - index_interface_pic_start) / 4)
+    window_size = 3#int((index_interface_pic_end - index_interface_pic_start) / 4)
     current_pic_tmp = convolve_parameter(current_pic_tmp, window_size)
+    #current_x_mhd = convolve_parameter(current_x_mhd, window_size)
+    #current_y_mhd = convolve_parameter(current_y_mhd, window_size)
+    #current_z_mhd = convolve_parameter(current_z_mhd, window_size)
     
     current_x_mhd = current_x_mhd[index_interface_mhd_start:index_interface_mhd_end - 1]
     current_y_mhd = current_y_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -225,7 +240,7 @@ def reset_particles(
         
         x_pic = np.delete(x_pic, delete_index, axis=1)
         v_pic = np.delete(v_pic, delete_index, axis=1)
-
+    
         reload_num_particle = round(zeroth_moment_pic[i] * F[i])
         
         new_particles_v = np.zeros([3, reload_num_particle])
@@ -278,14 +293,6 @@ def send_MHD_to_PICinterface_particle(
     second_moment_ion = get_second_moment(c, v_pic_ion, x_pic_ion, nx_pic, dx, second_moment_ion)
     second_moment_electron = get_second_moment(c, v_pic_electron, x_pic_electron, nx_pic, dx, second_moment_electron)
 
-    window_size = 20 #int((index_interface_pic_end - index_interface_pic_start) / 4)
-    zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
-    zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
-    first_moment_ion = convolve_parameter(first_moment_ion, window_size)
-    first_moment_electron = convolve_parameter(first_moment_electron, window_size)
-    second_moment_ion = convolve_parameter(second_moment_ion, window_size)
-    second_moment_electron = convolve_parameter(second_moment_electron, window_size)
-
     rho_pic = m_ion * zeroth_moment_ion + m_electron * zeroth_moment_electron
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
     bulk_speed_ion_pic[0, :] = first_moment_ion[0, :] / (zeroth_moment_ion + 1e-10)
@@ -311,6 +318,12 @@ def send_MHD_to_PICinterface_particle(
     current_pic[0, :] = q_ion * first_moment_ion[0, :] + q_electron * first_moment_electron[0, :]
     current_pic[1, :] = q_ion * first_moment_ion[1, :] + q_electron * first_moment_electron[1, :]
     current_pic[2, :] = q_ion * first_moment_ion[2, :] + q_electron * first_moment_electron[2, :]
+
+    window_size = 3#int((index_interface_pic_end - index_interface_pic_start) / 4)
+    rho_pic = convolve_parameter(rho_pic, window_size)
+    bulk_speed_pic = convolve_parameter(bulk_speed_pic, window_size)
+    p_pic = convolve_parameter(p_pic, window_size)
+    current_pic = convolve_parameter(current_pic, window_size)
     
     rho_mhd = U[0, :]
     u_mhd = U[1, :] / rho_mhd
@@ -330,6 +343,15 @@ def send_MHD_to_PICinterface_particle(
     current_y_mhd[-1] = current_y_mhd[-2] 
     current_z_mhd[0] = current_z_mhd[1] 
     current_z_mhd[-1] = current_z_mhd[-2] 
+
+    #rho_mhd = convolve_parameter(rho_mhd, window_size)
+    #u_mhd = convolve_parameter(u_mhd, window_size)
+    #v_mhd = convolve_parameter(v_mhd, window_size)
+    #w_mhd = convolve_parameter(w_mhd, window_size)
+    #current_x_mhd = convolve_parameter(current_x_mhd, window_size)
+    #current_y_mhd = convolve_parameter(current_y_mhd, window_size)
+    #current_z_mhd = convolve_parameter(current_z_mhd, window_size)
+    #p_mhd = convolve_parameter(p_mhd, window_size)
     
     zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
     zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
@@ -379,7 +401,7 @@ def send_MHD_to_PICinterface_particle(
     )
 
     ni_pic = rho_pic / (m_electron + m_ion)
-    ne_pic = ni_pic# - (reload_zeroth_moment_ion - reload_zeroth_moment_electron) #注25
+    ne_pic = ni_pic
     #Ti=Teのつもり
     v_thi_squared_pic = p_pic / ni_pic / m_ion      
     v_the_squared_pic = p_pic / ne_pic / m_electron 
@@ -414,20 +436,10 @@ def send_PIC_to_MHDinterface(
         U
     ):
 
-    window_size = 20 #int((index_interface_pic_end - index_interface_pic_start) / 4)
-    zeroth_moment_ion = convolve_parameter(zeroth_moment_ion, window_size)
-    zeroth_moment_electron = convolve_parameter(zeroth_moment_electron, window_size)
-    first_moment_ion = convolve_parameter(first_moment_ion, window_size)
-    first_moment_electron = convolve_parameter(first_moment_electron, window_size)
-    second_moment_ion = convolve_parameter(second_moment_ion, window_size)
-    second_moment_electron = convolve_parameter(second_moment_electron, window_size)
     #MHDグリッドに合わせる
     Bx_pic_tmp = B_pic[0, :]
     By_pic_tmp = 0.5 * (B_pic[1, :] + np.roll(B_pic[1, :], 1, axis=0))
     Bz_pic_tmp = 0.5 * (B_pic[2, :] + np.roll(B_pic[2, :], 1, axis=0))
-    Bx_pic_tmp = convolve_parameter(Bx_pic_tmp, window_size)
-    By_pic_tmp = convolve_parameter(By_pic_tmp, window_size)
-    Bz_pic_tmp = convolve_parameter(Bz_pic_tmp, window_size)
 
     zeroth_moment_ion = zeroth_moment_ion[index_interface_pic_start:index_interface_pic_end]
     zeroth_moment_electron = zeroth_moment_electron[index_interface_pic_start:index_interface_pic_end]
@@ -439,7 +451,7 @@ def send_PIC_to_MHDinterface(
     By_pic = By_pic_tmp[index_interface_pic_start:index_interface_pic_end]
     Bz_pic = Bz_pic_tmp[index_interface_pic_start:index_interface_pic_end]
  
-    rho_pic = m_electron * zeroth_moment_electron + m_ion * zeroth_moment_ion
+    rho_pic = m_ion * zeroth_moment_ion + m_electron * zeroth_moment_electron
     bulk_speed_ion_pic = np.zeros(first_moment_ion.shape)
     bulk_speed_ion_pic[0, :] = first_moment_ion[0, :] / (zeroth_moment_ion + 1e-10)
     bulk_speed_ion_pic[1, :] = first_moment_ion[1, :] / (zeroth_moment_ion + 1e-10)
@@ -460,6 +472,14 @@ def send_PIC_to_MHDinterface(
                         / 3.0 / (zeroth_moment_electron + 1e-10)
     p_pic = zeroth_moment_electron * m_electron * v_the_squared_pic / 2.0 + zeroth_moment_ion * m_ion * v_thi_squared_pic / 2.0
 
+    window_size = 3#int((index_interface_pic_end - index_interface_pic_start) / 4)
+    rho_pic = convolve_parameter(rho_pic, window_size)
+    bulk_speed_pic = convolve_parameter(bulk_speed_pic, window_size)
+    Bx_pic = convolve_parameter(Bx_pic, window_size)
+    By_pic = convolve_parameter(By_pic, window_size)
+    Bz_pic = convolve_parameter(Bz_pic, window_size)
+    p_pic = convolve_parameter(p_pic, window_size)
+
     rho_mhd = U[0, :]
     u_mhd = U[1, :] / rho_mhd
     v_mhd = U[2, :] / rho_mhd
@@ -471,6 +491,15 @@ def send_PIC_to_MHDinterface(
     p_mhd = (gamma - 1.0) \
           * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
               - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
+    
+    #rho_mhd = convolve_parameter(rho_mhd, window_size)
+    #u_mhd = convolve_parameter(u_mhd, window_size)
+    #v_mhd = convolve_parameter(v_mhd, window_size)
+    #w_mhd = convolve_parameter(w_mhd, window_size)
+    #Bx_mhd = convolve_parameter(Bx_mhd, window_size)
+    #By_mhd = convolve_parameter(By_mhd, window_size)
+    #Bz_mhd = convolve_parameter(Bz_mhd, window_size)
+    #p_mhd = convolve_parameter(p_mhd, window_size)
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
     u_mhd = u_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -583,6 +612,31 @@ def get_first_moment(c, v, x, n_x, dx, first_moment):
     return first_moment
 
 
+def reload_get_first_moment(c, v, x, n_x, dx, first_moment):
+    x_index = np.round(x[0, :] / dx - 1e-10).astype(int)
+    x_index[x_index == n_x] = 0
+
+    index_one_array = x_index
+
+    first_moment[0, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :], 
+                                 minlength=n_x
+                                )
+    first_moment[1, :] += np.bincount(index_one_array, 
+                                 weights=v[1, :], 
+                                 minlength=n_x
+                                )
+    first_moment[2, :] += np.bincount(index_one_array, 
+                                 weights=v[2, :], 
+                                 minlength=n_x
+                                )
+    
+    first_moment[:, 0] = first_moment[:, 1]
+    first_moment[:, -1] = first_moment[:, -2]
+
+    return first_moment
+
+
 def get_second_moment(c, v, x, n_x, dx, second_moment):
     x_index = np.floor(x[0, :] / dx).astype(int)
 
@@ -647,3 +701,41 @@ def get_second_moment(c, v, x, n_x, dx, second_moment):
 
     return second_moment
 
+
+def reload_get_second_moment(c, v, x, n_x, dx, second_moment):
+    x_index = np.round(x[0, :] / dx - 1e-10).astype(int)
+    x_index[x_index == n_x] = 0
+    index_one_array = x_index
+
+    second_moment[0, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * v[0, :], 
+                                 minlength=n_x
+                                )
+    second_moment[1, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * v[1, :], 
+                                 minlength=n_x
+                                )
+    second_moment[2, :] += np.bincount(index_one_array, 
+                                 weights=v[0, :] * v[2, :], 
+                                 minlength=n_x
+                                )
+    second_moment[3, :] = second_moment[1, :]
+    second_moment[4, :] += np.bincount(index_one_array, 
+                                 weights=v[1, :] * v[1, :], 
+                                 minlength=n_x
+                                )
+    second_moment[5, :] += np.bincount(index_one_array, 
+                                 weights=v[1, :] * v[2, :], 
+                                 minlength=n_x
+                                )
+    second_moment[6, :] = second_moment[2, :]
+    second_moment[7, :] = second_moment[5, :]
+    second_moment[8, :] += np.bincount(index_one_array, 
+                                 weights=v[2, :] * v[2, :], 
+                                 minlength=n_x
+                                )
+    
+    second_moment[:, 0] = second_moment[:, 1]
+    second_moment[:, -1] = second_moment[:, -2]
+
+    return second_moment
