@@ -1,14 +1,17 @@
 import numpy as np
 
 
-def smoothing_U(U, window_size = 3):
+def smoothing_U(U, index_interface_mhd_start, index_interface_mhd_end, window_size = 3):
 
     smoothed_U = U.copy().astype(np.float64)
 
     for i in range(8):
-        tmp_U = np.convolve(U[i, :], np.ones(window_size) / window_size, mode="valid")
-        smoothed_U[i, window_size//2 : -window_size//2 + 1] = tmp_U
-        
+        tmp_U = np.convolve(U[i, :], np.ones(window_size) / window_size, mode="same")
+
+        index_start = index_interface_mhd_start
+        index_end = index_interface_mhd_end - window_size//2 + 1
+        smoothed_U[i, index_start : index_end] = tmp_U[index_start : index_end]
+        smoothed_U[i, index_end - window_size//2:] = smoothed_U[i, index_end - window_size//2]
 
     return smoothed_U
 
