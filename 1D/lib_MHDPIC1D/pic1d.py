@@ -70,7 +70,7 @@ def get_current_density(c, q, v, x, n_x, dx, current):
 
 def buneman_boris_v(c, dt, q, m, E, B, v):
 
-    gamma = np.sqrt(1.0 + (np.linalg.norm(v, axis=0)/c)**2)
+    gamma = np.sqrt(1.0 + (np.linalg.norm(v, axis=0) / c)**2)
 
     #TとSの設定
     T = (q/m) * dt * B / 2.0 / gamma
@@ -87,7 +87,7 @@ def buneman_boris_v(c, dt, q, m, E, B, v):
 
 def buneman_boris_x(c, dt, v, x):
 
-    gamma = np.sqrt(1.0 + (np.linalg.norm(v, axis=0)/c)**2)
+    gamma = np.sqrt(1.0 + (np.linalg.norm(v, axis=0) / c)**2)
 
     x = x + v * dt / gamma
 
