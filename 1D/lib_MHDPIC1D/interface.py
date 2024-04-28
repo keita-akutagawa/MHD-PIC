@@ -28,19 +28,7 @@ def get_interface_quantity_MHDtoPIC(x_interface_coordinate, q_mhd, q_pic):
     return q_interface
 
 
-def get_interface_quantity_MHDtoPIC_temperature(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function(x_interface_coordinate)
-    q_interface = F * q_mhd + (1.0 - F) * q_pic
-    return q_interface
-
-
 def get_interface_quantity_PICtoMHD(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function(x_interface_coordinate)
-    q_interface = F * q_mhd + (1.0 - F) * q_pic
-    return q_interface
-
-
-def get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, q_mhd, q_pic):
     F = interlocking_function(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
@@ -52,14 +40,14 @@ def convolve_parameter(q, window_size):
     if len(q.shape) == 1:  # ベクトルの場合
         tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
         convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
-        convolved_q[:window_size//2] = convolved_q[window_size//2]
-        convolved_q[-window_size//2:] = convolved_q[-window_size//2]
+        #convolved_q[:window_size//2] = convolved_q[window_size//2]
+        #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
             tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
             convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
-            convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
-            convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
+            #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
+            #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
 
     return convolved_q
 
@@ -307,22 +295,12 @@ def send_MHD_to_PICinterface_particle(
 
     rho_pic = np.zeros(nx_pic)
     bulk_speed_pic = np.zeros([3, nx_pic])
-    v_thi_squared_pic = np.zeros(nx_pic)
-    v_the_squared_pic = np.zeros(nx_pic)
-    p_pic = np.zeros(nx_pic)
     current_pic = np.zeros([3, nx_pic])
 
     rho_pic = m_ion * zeroth_moment_ion + m_electron * zeroth_moment_electron
     bulk_speed_pic[0, :] = (m_ion * first_moment_ion[0, :] + m_electron * first_moment_electron[0, :]) / rho_pic
     bulk_speed_pic[1, :] = (m_ion * first_moment_ion[1, :] + m_electron * first_moment_electron[1, :]) / rho_pic
     bulk_speed_pic[2, :] = (m_ion * first_moment_ion[2, :] + m_electron * first_moment_electron[2, :]) / rho_pic
-    v_thi_squared_pic = ((second_moment_ion[0, :] + second_moment_ion[4, :] + second_moment_ion[8, :])
-                        - (first_moment_ion[0, :]**2 + first_moment_ion[1, :]**2 + first_moment_ion[2, :]**2) / zeroth_moment_ion) \
-                        / 3.0 / (zeroth_moment_ion + 1e-10)
-    v_the_squared_pic = ((second_moment_electron[0, :] + second_moment_electron[4, :] + second_moment_electron[8, :])
-                        - (first_moment_electron[0, :]**2 + first_moment_electron[1, :]**2 + first_moment_electron[2, :]**2) / zeroth_moment_electron) \
-                        / 3.0 / (zeroth_moment_electron + 1e-10)
-    p_pic = zeroth_moment_electron * m_electron * v_the_squared_pic / 2.0 + zeroth_moment_ion * m_ion * v_thi_squared_pic / 2.0
     q_ion = -1.0 * q_electron
     current_pic[0, :] = q_ion * first_moment_ion[0, :] + q_electron * first_moment_electron[0, :]
     current_pic[1, :] = q_ion * first_moment_ion[1, :] + q_electron * first_moment_electron[1, :]
@@ -330,12 +308,10 @@ def send_MHD_to_PICinterface_particle(
 
     rho_pic = convolve_parameter(rho_pic, window_size)
     bulk_speed_pic = convolve_parameter(bulk_speed_pic, window_size)
-    p_pic = convolve_parameter(p_pic, window_size)
     current_pic = convolve_parameter(current_pic, window_size)
 
     rho_pic = rho_pic[index_interface_pic_start:index_interface_pic_end]
     bulk_speed_pic = bulk_speed_pic[:, index_interface_pic_start:index_interface_pic_end]
-    p_pic = p_pic[index_interface_pic_start:index_interface_pic_end]
     current_pic = current_pic[:, index_interface_pic_start:index_interface_pic_end]
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -345,7 +321,6 @@ def send_MHD_to_PICinterface_particle(
     current_x_mhd = current_x_mhd[index_interface_mhd_start:index_interface_mhd_end]
     current_y_mhd = current_y_mhd[index_interface_mhd_start:index_interface_mhd_end]
     current_z_mhd = current_z_mhd[index_interface_mhd_start:index_interface_mhd_end]
-    p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Ti_mhd = Ti_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Te_mhd = Te_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
@@ -372,13 +347,9 @@ def send_MHD_to_PICinterface_particle(
     current_pic[2, :] = get_interface_quantity_MHDtoPIC(
         x_interface_coordinate, current_z_mhd, current_pic[2, :]
     )
-    p_pic = get_interface_quantity_MHDtoPIC_temperature(
-        x_interface_coordinate, p_mhd, p_pic
-    )
 
     ni_pic = rho_pic / (m_electron + m_ion)
     ne_pic = ni_pic
-    #Ti=Teのつもり
     v_thi_squared_pic = 2.0 * Ti_mhd / m_ion      
     v_the_squared_pic = 2.0 * Te_mhd / m_electron
 
@@ -453,14 +424,14 @@ def send_PIC_to_MHDinterface(
     Bz_pic = Bz_pic_tmp[index_interface_pic_start:index_interface_pic_end]
     p_pic = p_pic[index_interface_pic_start:index_interface_pic_end]
 
-    rho_mhd = U[0, :].copy()
-    u_mhd = U[1, :].copy() / rho_mhd
-    v_mhd = U[2, :].copy() / rho_mhd
-    w_mhd = U[3, :].copy() / rho_mhd
-    Bx_mhd = U[4, :].copy()
-    By_mhd = U[5, :].copy()
-    Bz_mhd = U[6, :].copy()
-    e_mhd = U[7, :].copy()
+    rho_mhd = U[0, :]
+    u_mhd = U[1, :] / rho_mhd
+    v_mhd = U[2, :] / rho_mhd
+    w_mhd = U[3, :] / rho_mhd
+    Bx_mhd = U[4, :]
+    By_mhd = U[5, :]
+    Bz_mhd = U[6, :]
+    e_mhd = U[7, :]
     p_mhd = (gamma - 1.0) \
           * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
               - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
@@ -483,7 +454,7 @@ def send_PIC_to_MHDinterface(
     Bx_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, Bx_mhd, Bx_pic)
     By_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, By_mhd, By_pic)
     Bz_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, Bz_mhd, Bz_pic)
-    p_mhd = get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, p_mhd, p_pic)
+    p_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, p_mhd, p_pic)
 
     U[0, index_interface_mhd_start:index_interface_mhd_end] = rho_mhd
     U[1, index_interface_mhd_start:index_interface_mhd_end] = u_mhd * rho_mhd
