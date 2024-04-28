@@ -12,7 +12,7 @@ def interlocking_function(x_interface_coordinate):
 def interlocking_function_temperature(x_interface_coordinate):
     #x_mhd = 0.0にする
     F = np.ones(x_interface_coordinate.shape[0])
-    F[-1] = 0.0
+    F[-5:] = 0.0
     return F
 
 
@@ -29,7 +29,7 @@ def get_interface_quantity_MHDtoPIC(x_interface_coordinate, q_mhd, q_pic):
 
 
 def get_interface_quantity_MHDtoPIC_temperature(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function_temperature(x_interface_coordinate)
+    F = interlocking_function(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
 
@@ -41,7 +41,7 @@ def get_interface_quantity_PICtoMHD(x_interface_coordinate, q_mhd, q_pic):
 
 
 def get_interface_quantity_PICtoMHD_temperature(x_interface_coordinate, q_mhd, q_pic):
-    F = interlocking_function_temperature(x_interface_coordinate)
+    F = interlocking_function(x_interface_coordinate)
     q_interface = F * q_mhd + (1.0 - F) * q_pic
     return q_interface
 
@@ -267,6 +267,30 @@ def send_MHD_to_PICinterface_particle(
         m_electron, m_ion, nx_pic, c, window_size, 
         v_pic_ion, v_pic_electron, x_pic_ion, x_pic_electron
     ):
+
+    rho_mhd = U[0, :]
+    u_mhd = U[1, :] / rho_mhd
+    v_mhd = U[2, :] / rho_mhd
+    w_mhd = U[3, :] / rho_mhd
+    Bx_mhd = U[4, :]
+    By_mhd = U[5, :]
+    Bz_mhd = U[6, :]
+    e_mhd = U[7, :]
+    p_mhd = (gamma - 1.0) \
+          * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
+              - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
+    current_x_mhd = np.zeros(Bx_mhd.shape)
+    current_y_mhd = -(np.roll(Bz_mhd, -1, axis=0) - np.roll(Bz_mhd, 1, axis=0)) / (2*dx)
+    current_z_mhd = (np.roll(By_mhd, -1, axis=0) - np.roll(By_mhd, 1, axis=0)) / (2*dx)
+    current_y_mhd[0] = current_y_mhd[1] 
+    current_y_mhd[-1] = current_y_mhd[-2] 
+    current_z_mhd[0] = current_z_mhd[1] 
+    current_z_mhd[-1] = current_z_mhd[-2] 
+    # ni = ne, Ti = Te のつもり
+    ni_mhd = rho_mhd / (m_ion + m_electron)
+    ne_mhd = ni_mhd
+    Ti_mhd = p_mhd / 2.0 / ni_mhd
+    Te_mhd = p_mhd / 2.0 / ne_mhd
     
     zeroth_moment_ion = np.zeros(nx_pic)
     zeroth_moment_electron = np.zeros(nx_pic)
@@ -308,25 +332,6 @@ def send_MHD_to_PICinterface_particle(
     bulk_speed_pic = convolve_parameter(bulk_speed_pic, window_size)
     p_pic = convolve_parameter(p_pic, window_size)
     current_pic = convolve_parameter(current_pic, window_size)
-    
-    rho_mhd = U[0, :].copy()
-    u_mhd = U[1, :].copy() / rho_mhd
-    v_mhd = U[2, :].copy() / rho_mhd
-    w_mhd = U[3, :].copy() / rho_mhd
-    Bx_mhd = U[4, :].copy()
-    By_mhd = U[5, :].copy()
-    Bz_mhd = U[6, :].copy()
-    e_mhd = U[7, :].copy()
-    p_mhd = (gamma - 1.0) \
-          * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
-              - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
-    current_x_mhd = np.zeros(Bx_mhd.shape)
-    current_y_mhd = -(np.roll(Bz_mhd, -1, axis=0) - np.roll(Bz_mhd, 1, axis=0)) / (2*dx)
-    current_z_mhd = (np.roll(By_mhd, -1, axis=0) - np.roll(By_mhd, 1, axis=0)) / (2*dx)
-    current_y_mhd[0] = current_y_mhd[1] 
-    current_y_mhd[-1] = current_y_mhd[-2] 
-    current_z_mhd[0] = current_z_mhd[1] 
-    current_z_mhd[-1] = current_z_mhd[-2] 
 
     rho_pic = rho_pic[index_interface_pic_start:index_interface_pic_end]
     bulk_speed_pic = bulk_speed_pic[:, index_interface_pic_start:index_interface_pic_end]
@@ -341,6 +346,8 @@ def send_MHD_to_PICinterface_particle(
     current_y_mhd = current_y_mhd[index_interface_mhd_start:index_interface_mhd_end]
     current_z_mhd = current_z_mhd[index_interface_mhd_start:index_interface_mhd_end]
     p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    Ti_mhd = Ti_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    Te_mhd = Te_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
@@ -372,11 +379,11 @@ def send_MHD_to_PICinterface_particle(
     ni_pic = rho_pic / (m_electron + m_ion)
     ne_pic = ni_pic
     #Ti=Teのつもり
-    v_thi_squared_pic = p_pic / ni_pic / m_ion      
-    v_the_squared_pic = p_pic / ne_pic / m_electron 
+    v_thi_squared_pic = 2.0 * Ti_mhd / m_ion      
+    v_the_squared_pic = 2.0 * Te_mhd / m_electron
 
-    v_thi_squared_pic = np.maximum(v_thi_squared_pic, np.zeros(v_thi_squared_pic.shape[0]) + 1e-10)
-    v_the_squared_pic = np.maximum(v_the_squared_pic, np.zeros(v_the_squared_pic.shape[0]) + 1e-10)
+    #v_thi_squared_pic = np.maximum(v_thi_squared_pic, np.zeros(v_thi_squared_pic.shape[0]) + 1e-10)
+    #v_the_squared_pic = np.maximum(v_the_squared_pic, np.zeros(v_the_squared_pic.shape[0]) + 1e-10)
 
     bulk_speed_ion = np.zeros(bulk_speed_pic.shape)
     bulk_speed_ion = bulk_speed_pic
