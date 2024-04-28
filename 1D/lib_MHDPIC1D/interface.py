@@ -435,6 +435,11 @@ def send_PIC_to_MHDinterface(
     p_mhd = (gamma - 1.0) \
           * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
               - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
+    # ni = ne, Ti = Te のつもり
+    ni_mhd = rho_mhd / (m_ion + m_electron)
+    ne_mhd = ni_mhd
+    Ti_mhd = p_mhd / 2.0 / ni_mhd
+    Te_mhd = p_mhd / 2.0 / ne_mhd
     
     rho_mhd = rho_mhd[index_interface_mhd_start:index_interface_mhd_end]
     u_mhd = u_mhd[index_interface_mhd_start:index_interface_mhd_end]
@@ -443,7 +448,8 @@ def send_PIC_to_MHDinterface(
     Bx_mhd = Bx_mhd[index_interface_mhd_start:index_interface_mhd_end]
     By_mhd = By_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Bz_mhd = Bz_mhd[index_interface_mhd_start:index_interface_mhd_end]
-    p_mhd = p_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    Ti_mhd = Ti_mhd[index_interface_mhd_start:index_interface_mhd_end]
+    Te_mhd = Te_mhd[index_interface_mhd_start:index_interface_mhd_end]
 
     x_interface_coordinate = np.arange(0, index_interface_pic_end - index_interface_pic_start, 1)
 
@@ -454,7 +460,10 @@ def send_PIC_to_MHDinterface(
     Bx_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, Bx_mhd, Bx_pic)
     By_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, By_mhd, By_pic)
     Bz_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, Bz_mhd, Bz_pic)
-    p_mhd = get_interface_quantity_PICtoMHD(x_interface_coordinate, p_mhd, p_pic)
+
+    ni_mhd = rho_mhd / (m_ion + m_electron)
+    ne_mhd = ni_mhd
+    p_mhd = ni_mhd * Ti_mhd + ne_mhd * Te_mhd
 
     U[0, index_interface_mhd_start:index_interface_mhd_end] = rho_mhd
     U[1, index_interface_mhd_start:index_interface_mhd_end] = u_mhd * rho_mhd
