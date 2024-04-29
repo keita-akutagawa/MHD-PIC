@@ -134,3 +134,46 @@ def boundary_symmetric_x(U):
     U[:, -1] = U[:, -2]
 
     return U
+
+
+def get_time_step(U, gamma_mhd, dx, CFL, index_start, index_end):
+    rho_mhd = U[0, index_start:index_end]
+    u_mhd = U[1, index_start:index_end] / rho_mhd
+    v_mhd = U[2, index_start:index_end] / rho_mhd
+    w_mhd = U[3, index_start:index_end] / rho_mhd
+    Bx_mhd = U[4, index_start:index_end]
+    By_mhd = U[5, index_start:index_end]
+    Bz_mhd = U[6, index_start:index_end]
+    e_mhd = U[7, index_start:index_end]
+    p_mhd = (gamma_mhd - 1.0) \
+        * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
+            - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
+    
+    cs_mhd = np.sqrt(gamma_mhd * p_mhd / rho_mhd)
+    ca_mhd = np.sqrt((Bx_mhd**2 + By_mhd**2 + Bz_mhd**2) / rho_mhd)
+    highest_speed_mhd = (np.abs(u_mhd) + np.sqrt(cs_mhd**2 + ca_mhd**2))
+    dt_mhd = CFL * np.min(1.0 / (highest_speed_mhd / dx))
+
+    return dt_mhd
+
+
+def time_evolution_mhd(flux, gamma_mhd, dx, dt, U):
+
+    rho_mhd = U[0, :]
+    u_mhd = U[1, :] / rho_mhd
+    v_mhd = U[2, :] / rho_mhd
+    w_mhd = U[3, :] / rho_mhd
+    Bx_mhd = U[4, :]
+    By_mhd = U[5, :]
+    Bz_mhd = U[6, :]
+    e_mhd = U[7, :]
+    p_mhd = (gamma_mhd - 1.0) \
+        * (e_mhd - 0.5 * rho_mhd * (u_mhd**2+v_mhd**2+w_mhd**2)
+            - 0.5 * (Bx_mhd**2+By_mhd**2+Bz_mhd**2))
+    flux = get_flux_HLLD(rho_mhd, u_mhd, v_mhd, w_mhd, Bx_mhd, By_mhd, Bz_mhd, e_mhd, gamma_mhd, flux, axis=0)
+
+    U += -dt/dx * (flux - np.roll(flux, 1, axis=1))
+
+    return U
+
+

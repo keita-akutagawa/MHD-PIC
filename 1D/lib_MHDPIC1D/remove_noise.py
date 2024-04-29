@@ -11,7 +11,8 @@ def smoothing_U(U, index_interface_mhd_start, index_interface_mhd_end, window_si
         index_start = index_interface_mhd_start
         index_end = index_interface_mhd_end - window_size//2 + 1
         smoothed_U[i, index_start : index_end] = tmp_U[index_start : index_end]
-        smoothed_U[i, index_end - window_size//2:] = smoothed_U[i, index_end - window_size//2]
+        smoothed_U[i, index_start : index_start + window_size//2] = smoothed_U[i, index_start + window_size//2]
+        smoothed_U[i, index_end - window_size//2 : index_end] = smoothed_U[i, index_end - window_size//2]
 
     return smoothed_U
 
