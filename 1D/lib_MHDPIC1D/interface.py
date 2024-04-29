@@ -24,14 +24,14 @@ def convolve_parameter(q, window_size):
     if len(q.shape) == 1:  # ベクトルの場合
         tmp_q = np.convolve(q, np.ones(window_size) / window_size, mode="valid")
         convolved_q[window_size//2 : -window_size//2 + 1] = tmp_q
-        #convolved_q[:window_size//2] = convolved_q[window_size//2]
-        #convolved_q[-window_size//2:] = convolved_q[-window_size//2]
+        convolved_q[:window_size//2] = convolved_q[window_size//2]
+        convolved_q[-window_size//2:] = convolved_q[-window_size//2]
     elif len(q.shape) == 2:  # 行列の場合
         for i in range(q.shape[0]):
             tmp_q = np.convolve(q[i, :], np.ones(window_size) / window_size, mode="valid")
             convolved_q[i, window_size//2 : -window_size//2 + 1] = tmp_q
-            #convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
-            #convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
+            convolved_q[i, :window_size//2] = convolved_q[i, window_size//2]
+            convolved_q[i, -window_size//2:] = convolved_q[i, -window_size//2]
 
     return convolved_q
 
@@ -419,6 +419,7 @@ def send_PIC_to_MHDinterface(
     Bz_mhd = Bz_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Ti_mhd = Ti_mhd[index_interface_mhd_start:index_interface_mhd_end]
     Te_mhd = Te_mhd[index_interface_mhd_start:index_interface_mhd_end]
+
 
     rho_mhd = get_interface_quantity_PICtoMHD(F, rho_mhd, rho_pic)
     u_mhd = get_interface_quantity_PICtoMHD(F, u_mhd, bulk_speed_pic[0, :])
