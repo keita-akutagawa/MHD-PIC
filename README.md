@@ -1,10 +1,11 @@
 # MHD-PIC
 
 連結階層シミュレーションのコードです。 \
-1次元は、MHD→PIC・PIC→MHDのfast modeの伝搬に成功しました。
-
-IdealMHDとPICを接続領域を用いて繋げます。
-
+IdealMHDとPICを接続領域を用いて繋げます。 \
+1次元は、MHD→PIC・PIC→MHDのfast modeの伝搬に成功しました。 \
+現在はnumpyを駆使して書いていますが、いずれC++に移行します。
+さらにThrustライブラリ等を用いてGPU対応させます。 \
+※今のコードもnumpyをcupyにすればGPU対応可能です。
 
 
 【参考文献】
