@@ -2,6 +2,6 @@ results*/
 pictures*/
 test*/
 *.mp4
-log_*
+log*
 __pycache__/
 tmp*
