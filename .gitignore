@@ -4,3 +4,4 @@ test*/
 *.mp4
 log_*
 __pycache__/
+tmp*
