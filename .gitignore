@@ -5,3 +5,4 @@ test*/
 log*
 __pycache__/
 tmp*
+*.zip
