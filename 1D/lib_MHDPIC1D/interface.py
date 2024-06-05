@@ -166,6 +166,8 @@ def send_MHD_to_PICinterface_current(
     return current_pic
 
 
+
+"""
 def reset_particles(
         n_pic, bulk_speed_pic, v_th_squared_pic,
         index_interface_pic_start, index_interface_pic_end, F, 
@@ -214,7 +216,62 @@ def reset_particles(
     v_pic, x_pic = open_condition_x_left(v_pic, x_pic, x_min_pic)
 
     return v_pic, x_pic
+"""
 
+def reset_particles(
+        n_pic, bulk_speed_pic, v_th_squared_pic,
+        index_interface_pic_start, index_interface_pic_end, F, 
+        x_min_pic, dx, v_pic, x_pic
+    ):
+
+    particle_count = x_pic.shape[1]
+
+    # 各インターフェースの削除対象インデックスをまとめて取得
+    delete_indices = []
+    for i in range(len(n_pic)):
+        start_x = x_min_pic + (i + index_interface_pic_start) * dx - 0.5 * dx
+        end_x = x_min_pic + (i + index_interface_pic_start + 1) * dx - 0.5 * dx
+        indices = np.where((x_pic[0, :] > start_x) & (x_pic[0, :] <= end_x))[0]
+        delete_num = round(len(indices) * F[i])
+        if delete_num > 0:
+            rs = np.random.RandomState(np.random.randint(1, 100000000))
+            delete_indices.append(rs.choice(indices, size=delete_num, replace=False))
+
+    # インデックスをフラットにして一括削除
+    if delete_indices:
+        delete_indices = np.concatenate(delete_indices)
+        x_pic = np.delete(x_pic, delete_indices, axis=1)
+        v_pic = np.delete(v_pic, delete_indices, axis=1)
+    
+    # パーティクルを一括で生成
+    new_v_list = []
+    new_x_list = []
+    for i in range(len(n_pic)):
+        reload_num = round(n_pic[i] * F[i])
+        if reload_num > 0:
+            random_state = np.random.RandomState(np.random.randint(1, 100000000))
+            new_v = np.vstack([
+                stats.norm.rvs(bulk_speed_pic[j, i], np.sqrt(v_th_squared_pic[i]), size=reload_num, random_state=random_state)
+                for j in range(3)
+            ])
+            new_x = np.zeros((3, reload_num))
+            new_x[0, :] = (random_state.rand(reload_num) - 0.5) * dx + x_min_pic + (index_interface_pic_start + i) * dx
+            new_v_list.append(new_v)
+            new_x_list.append(new_x)
+    
+    # 新しいパーティクルを追加
+    if new_v_list:
+        new_v_particles = np.hstack(new_v_list)
+        new_x_particles = np.hstack(new_x_list)
+        v_pic = np.hstack([v_pic, new_v_particles])
+        x_pic = np.hstack([x_pic, new_x_particles])
+
+    # 境界条件を適用
+    v_pic, x_pic = open_condition_x_left(v_pic, x_pic, x_min_pic)
+
+    return v_pic, x_pic
+
+    
 
 def send_MHD_to_PICinterface_particle(
         index_interface_mhd_start, index_interface_mhd_end, 
